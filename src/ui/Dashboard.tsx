@@ -3,6 +3,7 @@ import PeriodToggle from './components/PeriodToggle';
 import KpiCards from './components/KpiCards';
 import TrendChart from './components/TrendChart';
 import ForwardPace from './components/ForwardPace';
+import MixPanels from './components/MixPanels';
 import { loadSnapshots, targetMonthForPeriod, type Period, type LoadedSnapshots } from './dashboardData';
 
 export default function Dashboard() {
@@ -25,6 +26,7 @@ export default function Dashboard() {
       <KpiCards yearly={data.latest.yearly} monthIndex={monthIndex} />
       <TrendChart yearly={data.latest.yearly} dataAsOf={dataAsOf} />
       <ForwardPace latest={data.latest} daysAhead={period === 'next2Weeks' ? 14 : 60} />
+      <MixPanels channels={data.latest.channels} countries={data.latest.countries} />
     </div>
   );
 }
