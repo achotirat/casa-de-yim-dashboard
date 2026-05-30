@@ -4,6 +4,7 @@ import KpiCards from './components/KpiCards';
 import TrendChart from './components/TrendChart';
 import ForwardPace from './components/ForwardPace';
 import MixPanels from './components/MixPanels';
+import Recommendations from './components/Recommendations';
 import { loadSnapshots, targetMonthForPeriod, type Period, type LoadedSnapshots } from './dashboardData';
 
 export default function Dashboard() {
@@ -27,6 +28,7 @@ export default function Dashboard() {
       <TrendChart yearly={data.latest.yearly} dataAsOf={dataAsOf} />
       <ForwardPace latest={data.latest} daysAhead={period === 'next2Weeks' ? 14 : 60} />
       <MixPanels channels={data.latest.channels} countries={data.latest.countries} />
+      <Recommendations latest={data.latest} previous={data.previous} />
     </div>
   );
 }
