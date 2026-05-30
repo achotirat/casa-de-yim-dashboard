@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import PeriodToggle from './components/PeriodToggle';
 import KpiCards from './components/KpiCards';
+import TrendChart from './components/TrendChart';
+import ForwardPace from './components/ForwardPace';
 import { loadSnapshots, targetMonthForPeriod, type Period, type LoadedSnapshots } from './dashboardData';
 
 export default function Dashboard() {
@@ -21,6 +23,7 @@ export default function Dashboard() {
     <div className="max-w-5xl mx-auto space-y-6">
       <PeriodToggle value={period} onChange={setPeriod} />
       <KpiCards yearly={data.latest.yearly} monthIndex={monthIndex} />
+      <TrendChart yearly={data.latest.yearly} dataAsOf={dataAsOf} />
     </div>
   );
 }
