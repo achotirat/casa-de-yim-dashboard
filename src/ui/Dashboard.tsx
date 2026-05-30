@@ -24,6 +24,7 @@ export default function Dashboard() {
       <PeriodToggle value={period} onChange={setPeriod} />
       <KpiCards yearly={data.latest.yearly} monthIndex={monthIndex} />
       <TrendChart yearly={data.latest.yearly} dataAsOf={dataAsOf} />
+      <ForwardPace latest={data.latest} daysAhead={period === 'next2Weeks' ? 14 : 60} />
     </div>
   );
 }
