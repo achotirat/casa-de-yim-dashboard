@@ -12,14 +12,16 @@ function Delta({ value }: { value: number | null }) {
 }
 
 export default function KpiCards({
-  yearly, yearlyPrev, monthIndex,
-}: { yearly?: YearlyReport; yearlyPrev?: YearlyReport; monthIndex: number }) {
+  yearly, yearlyPrev, monthIndex, occOverride,
+}: { yearly?: YearlyReport; yearlyPrev?: YearlyReport; monthIndex: number; occOverride?: number | null }) {
   const cur = monthByIndex(yearly, monthIndex);
   const prevMonth = monthByIndex(yearly, monthIndex === 1 ? 12 : monthIndex - 1);
   const prevYear = monthByIndex(yearlyPrev, monthIndex);
 
+  const occ = occOverride ?? cur?.occPct ?? null;
+
   const cards = [
-    { label: 'OCCUPANCY', value: fmt(cur?.occPct ?? null, '%'), mom: pctDelta(cur?.occPct ?? null, prevMonth?.occPct ?? null), yoy: pctDelta(cur?.occPct ?? null, prevYear?.occPct ?? null) },
+    { label: 'OCCUPANCY', value: fmt(occ, '%'), mom: pctDelta(occ, prevMonth?.occPct ?? null), yoy: pctDelta(occ, prevYear?.occPct ?? null) },
     { label: 'ADR', value: '฿' + fmt(cur?.adr ?? null), mom: pctDelta(cur?.adr ?? null, prevMonth?.adr ?? null), yoy: pctDelta(cur?.adr ?? null, prevYear?.adr ?? null) },
     { label: 'REVPAR', value: '฿' + fmt(cur?.revPar ?? null), mom: pctDelta(cur?.revPar ?? null, prevMonth?.revPar ?? null), yoy: pctDelta(cur?.revPar ?? null, prevYear?.revPar ?? null) },
   ];
