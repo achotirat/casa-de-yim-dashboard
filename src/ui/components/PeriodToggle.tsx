@@ -1,6 +1,6 @@
 import { PERIOD_LABELS, type Period } from '../dashboardData';
 
-const ORDER: Period[] = ['thisMonth', 'next2Weeks', 'nextMonth', 'lastMonth', 'lastWeek'];
+const ORDER: Period[] = ['thisMonth', 'next2Weeks', 'nextMonth', 'lastMonth'];
 
 export default function PeriodToggle({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
   return (
