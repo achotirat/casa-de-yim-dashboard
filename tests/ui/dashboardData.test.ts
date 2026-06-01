@@ -12,7 +12,7 @@ describe('targetMonthForPeriod', () => {
   it('next month -> June (6)', () => {
     expect(targetMonthForPeriod('nextMonth', '2026-05-29')).toBe(6);
   });
-  it('this/last week falls in current month (5)', () => {
-    expect(targetMonthForPeriod('lastWeek', '2026-05-29')).toBe(5);
+  it('last week falls in previous month (4)', () => {
+    expect(targetMonthForPeriod('lastWeek', '2026-05-29')).toBe(4);
   });
 });

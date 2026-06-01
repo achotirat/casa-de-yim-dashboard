@@ -17,7 +17,7 @@ export function targetMonthForPeriod(period: Period, dataAsOf: string): number {
     case 'thisMonth': return month;
     case 'lastMonth': return month === 1 ? 12 : month - 1;
     case 'nextMonth': return month === 12 ? 1 : month + 1;
-    case 'lastWeek':
+    case 'lastWeek': return month === 1 ? 12 : month - 1;
     case 'next2Weeks': return month;
   }
 }

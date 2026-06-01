@@ -32,12 +32,23 @@ export default function Dashboard() {
     occOverride = Math.round(days.reduce((s, d) => s + d.occPct, 0) / days.length * 10) / 10;
   }
 
+  // Days ahead for ForwardPace chart
+  function forwardDays(): number {
+    if (period === 'next2Weeks') return 14;
+    if (period === 'thisMonth') {
+      const now = new Date();
+      const daysLeft = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() + 1;
+      return Math.max(daysLeft, 1);
+    }
+    return 60;
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <PeriodToggle value={period} onChange={setPeriod} />
       <KpiCards yearly={data.latest.yearly} monthIndex={monthIndex} occOverride={occOverride} />
       <TrendChart yearly={data.latest.yearly} dataAsOf={dataAsOf} />
-      <ForwardPace latest={data.latest} daysAhead={period === 'next2Weeks' ? 14 : 60} />
+      <ForwardPace latest={data.latest} daysAhead={forwardDays()} />
       <MixPanels channels={data.latest.channels} countries={data.latest.countries} />
       <Recommendations latest={data.latest} previous={data.previous} />
     </div>
