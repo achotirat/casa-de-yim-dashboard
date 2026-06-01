@@ -1,18 +1,20 @@
 import type { Snapshot } from '../types';
 import { getSnapshot, listSnapshotKeys } from '../lib/api';
 
-export type Period = 'lastMonth' | 'lastWeek' | 'nextMonth' | 'next2Weeks';
+export type Period = 'thisMonth' | 'next2Weeks' | 'nextMonth' | 'lastMonth' | 'lastWeek';
 
 export const PERIOD_LABELS: Record<Period, string> = {
+  thisMonth: 'เดือนนี้',
+  next2Weeks: '2 สัปดาห์หน้า',
+  nextMonth: 'เดือนหน้า',
   lastMonth: 'เดือนที่ผ่านมา',
   lastWeek: 'สัปดาห์ที่ผ่านมา',
-  nextMonth: 'เดือนหน้า',
-  next2Weeks: '2 สัปดาห์หน้า',
 };
 
 export function targetMonthForPeriod(period: Period, dataAsOf: string): number {
   const month = Number(dataAsOf.slice(5, 7)); // 1-12
   switch (period) {
+    case 'thisMonth': return month;
     case 'lastMonth': return month === 1 ? 12 : month - 1;
     case 'nextMonth': return month === 12 ? 1 : month + 1;
     case 'lastWeek':

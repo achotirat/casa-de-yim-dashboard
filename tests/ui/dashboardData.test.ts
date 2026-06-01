@@ -3,6 +3,9 @@ import { targetMonthForPeriod } from '../../src/ui/dashboardData';
 
 describe('targetMonthForPeriod', () => {
   // dataAsOf 2026-05-29
+  it('this month -> May (5)', () => {
+    expect(targetMonthForPeriod('thisMonth', '2026-05-29')).toBe(5);
+  });
   it('last month -> April (4)', () => {
     expect(targetMonthForPeriod('lastMonth', '2026-05-29')).toBe(4);
   });

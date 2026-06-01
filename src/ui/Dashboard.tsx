@@ -9,7 +9,7 @@ import { loadSnapshots, targetMonthForPeriod, type Period, type LoadedSnapshots 
 
 export default function Dashboard() {
   const [data, setData] = useState<LoadedSnapshots | null>(null);
-  const [period, setPeriod] = useState<Period>('lastMonth');
+  const [period, setPeriod] = useState<Period>('thisMonth');
 
   useEffect(() => {
     loadSnapshots().then(setData);
