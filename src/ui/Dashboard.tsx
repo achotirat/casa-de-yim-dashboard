@@ -5,6 +5,7 @@ import TrendChart from './components/TrendChart';
 import ForwardPace from './components/ForwardPace';
 import MixPanels from './components/MixPanels';
 import Recommendations from './components/Recommendations';
+import ForecastSection from './components/ForecastSection';
 import { loadSnapshots, targetMonthForPeriod, type Period, type LoadedSnapshots } from './dashboardData';
 import { villaCount } from '../metrics/capacity';
 import { dailyOccupancy } from '../metrics/pace';
@@ -48,6 +49,7 @@ export default function Dashboard() {
       <PeriodToggle value={period} onChange={setPeriod} />
       <KpiCards yearly={data.latest.yearly} monthIndex={monthIndex} occOverride={occOverride} />
       <TrendChart yearly={data.latest.yearly} dataAsOf={dataAsOf} />
+      <ForecastSection yearly={data.latest.yearly} dataAsOf={dataAsOf} />
       <ForwardPace latest={data.latest} daysAhead={forwardDays()} />
       <MixPanels channels={data.latest.channels} countries={data.latest.countries} />
       <Recommendations latest={data.latest} previous={data.previous} />
