@@ -1,4 +1,5 @@
 import type { YearlyReport } from '../../types';
+import type { WeeklyKpi } from '../../metrics/weekly';
 import { monthByIndex, pctDelta } from '../../metrics/kpi';
 
 function fmt(n: number | null, suffix = ''): string {
@@ -12,18 +13,27 @@ function Delta({ value }: { value: number | null }) {
 }
 
 export default function KpiCards({
-  yearly, yearlyPrev, monthIndex, occOverride,
-}: { yearly?: YearlyReport; yearlyPrev?: YearlyReport; monthIndex: number; occOverride?: number | null }) {
+  yearly, yearlyPrev, monthIndex, occOverride, weeklyOverride,
+}: {
+  yearly?: YearlyReport;
+  yearlyPrev?: YearlyReport;
+  monthIndex: number;
+  occOverride?: number | null;
+  weeklyOverride?: WeeklyKpi | null;
+}) {
   const cur = monthByIndex(yearly, monthIndex);
   const prevMonth = monthByIndex(yearly, monthIndex === 1 ? 12 : monthIndex - 1);
   const prevYear = monthByIndex(yearlyPrev, monthIndex);
 
-  const occ = occOverride ?? cur?.occPct ?? null;
+  // weeklyOverride wins over occOverride wins over monthly aggregate
+  const occ = weeklyOverride?.occPct ?? occOverride ?? cur?.occPct ?? null;
+  const adr = weeklyOverride?.adr ?? cur?.adr ?? null;
+  const revPar = weeklyOverride?.revPar ?? cur?.revPar ?? null;
 
   const cards = [
     { label: 'OCCUPANCY', value: fmt(occ, '%'), mom: pctDelta(occ, prevMonth?.occPct ?? null), yoy: pctDelta(occ, prevYear?.occPct ?? null) },
-    { label: 'ADR', value: '฿' + fmt(cur?.adr ?? null), mom: pctDelta(cur?.adr ?? null, prevMonth?.adr ?? null), yoy: pctDelta(cur?.adr ?? null, prevYear?.adr ?? null) },
-    { label: 'REVPAR', value: '฿' + fmt(cur?.revPar ?? null), mom: pctDelta(cur?.revPar ?? null, prevMonth?.revPar ?? null), yoy: pctDelta(cur?.revPar ?? null, prevYear?.revPar ?? null) },
+    { label: 'ADR',       value: '฿' + fmt(adr), mom: pctDelta(adr, prevMonth?.adr ?? null), yoy: pctDelta(adr, prevYear?.adr ?? null) },
+    { label: 'REVPAR',    value: '฿' + fmt(revPar), mom: pctDelta(revPar, prevMonth?.revPar ?? null), yoy: pctDelta(revPar, prevYear?.revPar ?? null) },
   ];
 
   return (
