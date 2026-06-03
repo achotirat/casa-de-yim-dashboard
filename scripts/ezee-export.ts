@@ -137,48 +137,43 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
     }, reportLabel);
 
     if (!clicked) throw new Error(`Could not find sidebar item: "${reportLabel}"`);
-    await page.waitForTimeout(1500); // wait for AJAX form update
 
-    // Debug: list iframes on page
-    const iframes = await page.evaluate(() =>
-      [...document.querySelectorAll('iframe')].map(f => ({ id: f.id, src: (f as HTMLIFrameElement).src, w: (f as HTMLElement).offsetWidth }))
+    // Wait for report_iframe to load (eZee loads each report in id="report_iframe")
+    await page.waitForFunction(
+      () => [...document.querySelectorAll('iframe')].some(f => (f as HTMLIFrameElement).src.includes('cenreport') && (f as HTMLElement).offsetWidth > 0),
+      { timeout: TIMEOUT }
     );
-    log(`  Iframes: ${JSON.stringify(iframes)}`);
+    const reportFrame = page.frames().find(f => f.url().includes('cenreport'));
+    if (!reportFrame) throw new Error('report_iframe not found after click');
+    log(`  Frame: ${reportFrame.url()}`);
 
-    // Set date / year parameters (handles iframe traversal internally)
-    await setDates(page, config);
+    await reportFrame.waitForLoadState('load', { timeout: TIMEOUT });
+    await page.waitForTimeout(500);
+
+    // Set date / year parameters using Frame API
+    await setDates(reportFrame, config);
     await page.waitForTimeout(300);
 
-    // Click "Report" button — traverse main frame + iframes via JS
-    const reportClicked = await page.evaluate(() => {
-      function findAndClickReport(doc: Document): boolean {
-        const els = [...doc.querySelectorAll<HTMLElement>('input, button, a, div, span')];
-        const btn = els.find(el => {
-          const val = (el as HTMLInputElement).value?.trim();
-          const txt = el.textContent?.trim();
-          return (val === 'Report' || txt === 'Report') && el.offsetWidth > 0 && el.offsetHeight > 0;
-        });
-        if (btn) { btn.click(); return true; }
-        for (const iframe of [...doc.querySelectorAll<HTMLIFrameElement>('iframe')]) {
-          try { if (iframe.contentDocument && findAndClickReport(iframe.contentDocument)) return true; } catch { /* cross-origin */ }
-        }
-        return false;
-      }
-      return findAndClickReport(document);
-    });
-    if (!reportClicked) throw new Error('Report button not found in any frame');
+    // Click "Report" button inside the iframe
+    await reportFrame.locator('input[value="Report"], button:has-text("Report")').first().click({ timeout: TIMEOUT });
 
-    // Report may open in new tab
+    // Report may open in a new tab or navigate within the iframe
     await page.waitForTimeout(3000);
     const allPages = page.context().pages();
-    const reportPage = allPages.length > 1 ? allPages[allPages.length - 1] : page;
-    await reportPage.waitForLoadState('load', { timeout: TIMEOUT });
-
-    const html = await reportPage.content();
-    log(`  ✓ ${config.id} — ${html.length} bytes`);
-
-    if (reportPage !== page) await reportPage.close();
-    return html;
+    if (allPages.length > 1) {
+      const reportPage = allPages[allPages.length - 1];
+      await reportPage.waitForLoadState('load', { timeout: TIMEOUT });
+      const html = await reportPage.content();
+      log(`  ✓ ${config.id} — ${html.length} bytes (new tab)`);
+      await reportPage.close();
+      return html;
+    } else {
+      // Report navigated within iframe
+      await reportFrame.waitForLoadState('load', { timeout: TIMEOUT });
+      const html = await reportFrame.content();
+      log(`  ✓ ${config.id} — ${html.length} bytes (iframe)`);
+      return html;
+    }
 
   } catch (err) {
     warn(`  Failed to export ${config.id}: ${(err as Error).message}`);
@@ -205,37 +200,27 @@ function getReportLabel(config: ReportDateConfig): string {
   }
 }
 
-async function setDates(page: Page, config: ReportDateConfig): Promise<void> {
+// frame is the report_iframe Frame object (same locator API as Page)
+async function setDates(frame: import('playwright').Frame, config: ReportDateConfig): Promise<void> {
   if (config.year) {
-    // Yearly Statistics: verified selector id="ctl0_popup_lstYear"
-    await page.locator('#ctl0_popup_lstYear').selectOption(String(config.year));
+    // Yearly Statistics: select year from dropdown inside iframe
+    await frame.locator('#ctl0_popup_lstYear').selectOption(String(config.year));
     return;
   }
 
   if (!config.dateFrom && !config.dateTo) return;
 
-  // eZee uses jQuery datepicker with disabled inputs — traverse main frame + iframes
-  const result = await page.evaluate(([from, to]) => {
-    function setInDoc(doc: Document): string {
-      try {
-        const win = doc.defaultView as any;
-        const jq = win?.jQuery || win?.$;
-        if (jq) {
-          const inputs = jq('input.hasDatepicker');
-          if (inputs.length > 0) {
-            if (from) { inputs.eq(0).datepicker('setDate', from); inputs.eq(0).trigger('change'); }
-            if (to && inputs.length > 1) { inputs.eq(1).datepicker('setDate', to); inputs.eq(1).trigger('change'); }
-            return `ok: ${inputs.length} inputs from="${from}" to="${to}"`;
-          }
-        }
-        // Try iframes
-        for (const iframe of [...doc.querySelectorAll<HTMLIFrameElement>('iframe')]) {
-          try { if (iframe.contentDocument) { const r = setInDoc(iframe.contentDocument); if (r.startsWith('ok')) return r; } } catch { /* cross-origin */ }
-        }
-        return 'no-datepicker-inputs-found';
-      } catch (e: any) { return `error: ${e.message}`; }
-    }
-    return setInDoc(document);
+  // eZee date inputs are disabled + jQuery datepicker — set via frame.evaluate (runs inside iframe)
+  const result = await frame.evaluate(([from, to]) => {
+    try {
+      const jq = (window as any).jQuery || (window as any).$;
+      if (!jq) return 'no-jquery';
+      const inputs = jq('input.hasDatepicker');
+      if (!inputs || inputs.length === 0) return 'no-datepicker-inputs';
+      if (from) { inputs.eq(0).datepicker('setDate', from); inputs.eq(0).trigger('change'); }
+      if (to && inputs.length > 1) { inputs.eq(1).datepicker('setDate', to); inputs.eq(1).trigger('change'); }
+      return `ok: ${inputs.length} inputs from="${from}" to="${to}"`;
+    } catch (e: any) { return `error: ${e.message}`; }
   }, [config.dateFrom ?? '', config.dateTo ?? '']);
 
   log(`  Date set: ${result}`);
