@@ -87,33 +87,40 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
   log(`Exporting: ${config.description}`);
 
   try {
-    // Navigate directly to reports page
+    // Navigate to reports page fresh each time
     await page.goto(REPORTS_URL, { waitUntil: 'load', timeout: TIMEOUT });
+    await page.waitForTimeout(1000); // let sidebar JS render
 
-    // Select the specific report from the list
+    // Use the sidebar search box to find the report
     const reportLabel = getReportLabel(config);
-    log(`  Clicking report: "${reportLabel}"`);
-    await page.click(`text="${reportLabel}"`, { timeout: TIMEOUT });
-    await page.waitForLoadState('load', { timeout: TIMEOUT });
+    log(`  Searching sidebar for: "${reportLabel}"`);
+    const searchBox = page.locator('input[placeholder="Search"]').first();
+    await searchBox.click();
+    await searchBox.fill(reportLabel);
+    await page.waitForTimeout(800); // wait for search filter to apply
 
-    // Set date parameters
+    // Click the matching report link in the sidebar
+    await page.locator(`li a:has-text("${reportLabel}")`).first().click();
+    await page.waitForLoadState('load', { timeout: TIMEOUT });
+    await page.waitForTimeout(500); // let form render
+
+    // Set date / year parameters
     await setDates(page, config);
+    await page.waitForTimeout(300);
 
-    // Click View/Generate to run the report
-    await page.click('input[type="submit"], button:has-text("View"), button:has-text("Generate"), input[value="View Report"], input[value="Generate"]', { timeout: TIMEOUT });
-    await page.waitForLoadState('load', { timeout: TIMEOUT });
+    // Click "Report" button (blue button = HTML report; "Export" = Excel, skip that)
+    await page.locator('button:has-text("Report")').first().click();
 
-    // Get report HTML — check if it opened in a new tab
-    const pages = page.context().pages();
-    const reportPage = pages.length > 1 ? pages[pages.length - 1] : page;
+    // Wait for report — may open in new tab
+    await page.waitForTimeout(2000);
+    const allPages = page.context().pages();
+    const reportPage = allPages.length > 1 ? allPages[allPages.length - 1] : page;
     await reportPage.waitForLoadState('load', { timeout: TIMEOUT });
 
     const html = await reportPage.content();
     log(`  ✓ ${config.id} — ${html.length} bytes`);
 
-    // Close popup tab if it opened in new tab
     if (reportPage !== page) await reportPage.close();
-
     return html;
 
   } catch (err) {
@@ -121,7 +128,7 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
     try {
       const screenshotPath = `${process.env.HOME}/logs/ezee-error-${config.id}.png`;
       await page.screenshot({ path: screenshotPath });
-      log(`  Screenshot saved: ${screenshotPath}`);
+      log(`  Screenshot: ${screenshotPath}`);
     } catch { /* ignore */ }
     return null;
   }
@@ -132,7 +139,7 @@ function getReportLabel(config: ReportDateConfig): string {
   switch (config.type) {
     case 'yearly':           return 'Yearly Statistics';
     case 'channel-ytd':
-    case 'channel-monthly':  return 'Contribution Analysis';
+    case 'channel-monthly':  return 'Contribution Analysis Report';
     case 'country-ytd':
     case 'country-monthly':  return 'Country Wise Reservation Statistics';
     case 'arrivals':         return 'Arrival List';
@@ -142,26 +149,36 @@ function getReportLabel(config: ReportDateConfig): string {
 }
 
 async function setDates(page: Page, config: ReportDateConfig): Promise<void> {
-  // VERIFY: these selectors match eZee's date input fields
   if (config.year) {
-    // Yearly Statistics: usually a Year dropdown
-    await page.selectOption('select[name="Year"], select[id*="year" i]', String(config.year))
-      .catch(() => page.fill('input[name="Year"], input[id*="year" i]', String(config.year)));
+    // Yearly Statistics: year dropdown or input
+    await page.locator('select[id*="Year" i], select[name*="Year" i]').first()
+      .selectOption(String(config.year))
+      .catch(() => page.locator('input[id*="Year" i], input[name*="Year" i]').first()
+        .fill(String(config.year)).catch(() => warn(`  Could not set year for ${config.id}`)));
     return;
   }
-  if (config.dateFrom) {
-    await page.fill('input[name="DateFrom"], input[id*="from" i], input[placeholder*="From"]', config.dateFrom)
-      .catch(() => warn(`  Could not fill DateFrom for ${config.id}`));
-  }
-  if (config.dateTo) {
-    await page.fill('input[name="DateTo"], input[id*="to" i], input[placeholder*="To"]', config.dateTo)
-      .catch(() => warn(`  Could not fill DateTo for ${config.id}`));
-  }
-  if (config.orderBy) {
-    // Order By dropdown — may not exist for all reports
-    await page.selectOption('select[name="OrderBy"], select[id*="order" i]', config.orderBy)
-      .catch(() => { /* optional field — ignore */ });
-  }
+
+  if (!config.dateFrom && !config.dateTo) return;
+
+  // eZee uses jQuery datepicker with disabled inputs — must use jQuery API to set values
+  const result = await page.evaluate(([from, to]: [string, string]) => {
+    const $ = (window as any).$;
+    if (!$) return 'no-jquery';
+    // Find visible datepicker inputs (first = from, second = to)
+    const inputs = $('input.hasDatepicker:visible');
+    if (inputs.length === 0) return 'no-visible-inputs';
+    if (from) {
+      inputs.eq(0).datepicker('setDate', from);
+      inputs.eq(0).trigger('change');
+    }
+    if (to && inputs.length > 1) {
+      inputs.eq(1).datepicker('setDate', to);
+      inputs.eq(1).trigger('change');
+    }
+    return `ok: set ${inputs.length} inputs from="${from}" to="${to}"`;
+  }, [config.dateFrom ?? '', config.dateTo ?? ''] as [string, string]);
+
+  log(`  Date set: ${result}`);
 }
 
 // ---------------------------------------------------------------------------
