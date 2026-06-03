@@ -70,14 +70,11 @@ async function loginEzee(page: Page): Promise<void> {
   log('Submitting login form...');
   await page.locator('button#login').click();
 
-  // eZee uses AJAX login — wait for product selection page to render
-  log('Waiting for product selection page...');
-  await page.locator('button[onclick*="absfront"]').waitFor({ state: 'visible', timeout: 30000 });
-  log('Product selection page ready — clicking PMS...');
-  await page.locator('button[onclick*="absfront"]').click();
+  // eZee auto-redirects to stayview after login — just wait for URL to leave /login/
+  log('Waiting for redirect away from login...');
+  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 30000 });
   await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
-  log(`After PMS click URL: ${page.url()}`);
-  log('Login complete ✓');
+  log(`Login complete ✓  URL: ${page.url()}`);
 }
 
 // Reports base URL (verified by user)
