@@ -1,4 +1,4 @@
-export type ReportType = 'yearly' | 'channel' | 'country' | 'arrivals' | 'unknown';
+export type ReportType = 'yearly' | 'channel' | 'country' | 'arrivals' | 'monthly' | 'unknown';
 
 export type ParseResult<T> =
   | { ok: true; data: T }
@@ -76,6 +76,24 @@ export interface ArrivalsReport {
   rows: ArrivalRow[];
 }
 
+export interface DayRow {
+  date: string;          // ISO "2026-05-01"
+  dayOfWeek: string;     // "Fri"
+  availableRooms: number | null;
+  nightSold: number | null;
+  occPct: number | null;
+  adr: number | null;
+  revPar: number | null;
+  pax: number | null;
+  roomCharges: number | null;
+}
+
+export interface MonthlyReport {
+  month: number;   // 1-12
+  year: number;
+  days: DayRow[];
+}
+
 export interface Snapshot {
   uploadedAt: string;        // ISO datetime
   dataAsOf: string | null;   // ISO date from "Printed By ... on dd/mm/yyyy"
@@ -83,4 +101,5 @@ export interface Snapshot {
   channels?: ChannelReport;
   countries?: CountryReport;
   arrivals?: ArrivalsReport;
+  monthly?: MonthlyReport[]; // up to 2 months, sorted oldest-first
 }
