@@ -204,7 +204,7 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
     const allPages = page.context().pages();
     if (allPages.length > 1) {
       const reportPage = allPages[allPages.length - 1];
-      await reportPage.waitForLoadState('load', { timeout: TIMEOUT });
+      await reportPage.waitForLoadState('networkidle', { timeout: TIMEOUT });
       const html = await reportPage.content();
       log(`  ✓ ${config.id} — ${html.length} bytes (new tab)`);
       await reportPage.close();
