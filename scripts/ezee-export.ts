@@ -83,6 +83,15 @@ const REPORTS_URL = 'https://live.ipms247.com/index.php/page/cenreport.report?un
 // ---------------------------------------------------------------------------
 // Navigate to a specific report + set dates + export HTML
 // ---------------------------------------------------------------------------
+// iframe URL suffix for each report (verified from browser debug run)
+const IFRAME_URL_SUFFIX: Record<string, string> = {
+  'Yearly Statistics':                   'yearlystatistics',
+  'Contribution Analysis Report':        'contributionanalysis',
+  'Country Wise Reservation Statistics': 'countrywisebooking',
+  'Arrival List':                        'arrival_list',
+  'Monthly Statistics':                  'monthlystatistics',
+};
+
 // Category each report lives in (must be expanded before clicking the report)
 const REPORT_CATEGORY: Record<string, string | null> = {
   'Yearly Statistics':                   'Statistical Report',
@@ -138,13 +147,21 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
 
     if (!clicked) throw new Error(`Could not find sidebar item: "${reportLabel}"`);
 
-    // Wait for report_iframe to load (eZee loads each report in id="report_iframe")
+    // Wait for report_iframe to update to this specific report's URL
+    const urlSuffix = IFRAME_URL_SUFFIX[reportLabel] ?? reportLabel.toLowerCase().replace(/\s+/g, '');
+    log(`  Waiting for iframe URL suffix: "${urlSuffix}"`);
     await page.waitForFunction(
-      () => [...document.querySelectorAll('iframe')].some(f => (f as HTMLIFrameElement).src.includes('cenreport') && (f as HTMLElement).offsetWidth > 0),
+      (suffix: string) => {
+        const iframe = document.getElementById('report_iframe') as HTMLIFrameElement | null;
+        return !!(iframe && iframe.src.includes(suffix) && iframe.offsetWidth > 0);
+      },
+      urlSuffix,
       { timeout: TIMEOUT }
     );
-    const reportFrame = page.frames().find(f => f.url().includes('cenreport'));
-    if (!reportFrame) throw new Error('report_iframe not found after click');
+
+    // Find the iframe Frame object — EXCLUDE main page frame (which also has "cenreport" in URL)
+    const reportFrame = page.frames().find(f => f !== page.mainFrame() && f.url().includes(urlSuffix));
+    if (!reportFrame) throw new Error(`report_iframe frame not found for suffix "${urlSuffix}"`);
     log(`  Frame: ${reportFrame.url()}`);
 
     await reportFrame.waitForLoadState('load', { timeout: TIMEOUT });
