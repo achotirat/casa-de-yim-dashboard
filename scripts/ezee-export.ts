@@ -150,11 +150,8 @@ function getReportLabel(config: ReportDateConfig): string {
 
 async function setDates(page: Page, config: ReportDateConfig): Promise<void> {
   if (config.year) {
-    // Yearly Statistics: year dropdown or input
-    await page.locator('select[id*="Year" i], select[name*="Year" i]').first()
-      .selectOption(String(config.year))
-      .catch(() => page.locator('input[id*="Year" i], input[name*="Year" i]').first()
-        .fill(String(config.year)).catch(() => warn(`  Could not set year for ${config.id}`)));
+    // Yearly Statistics: verified selector id="ctl0_popup_lstYear"
+    await page.locator('#ctl0_popup_lstYear').selectOption(String(config.year));
     return;
   }
 
