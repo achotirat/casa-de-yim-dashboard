@@ -55,15 +55,24 @@ async function loginEzee(page: Page): Promise<void> {
   await page.goto(EZEE_URL, { waitUntil: 'networkidle', timeout: TIMEOUT });
 
   // Selectors verified against live.ipms247.com/login/ — exact IDs from page source
-  // Use pressSequentially to fire keyboard events (required by eZee's form JS)
-  await page.locator('#username').pressSequentially(USERNAME.trim());
-  await page.locator('#password').pressSequentially(PASSWORD.trim());
-  await page.locator('#hotelcode').pressSequentially(PROPERTY_CODE.trim());
+  log(`Filling username="${USERNAME.trim()}" hotelcode="${PROPERTY_CODE.trim()}" password length=${PASSWORD.trim().length}`);
+
+  // Click field first to focus, then type
+  await page.locator('#username').click();
+  await page.locator('#username').fill(USERNAME.trim());
+
+  await page.locator('#hotelcode').click();
+  await page.locator('#hotelcode').fill(PROPERTY_CODE.trim());
+
+  await page.locator('#password').click();
+  await page.locator('#password').fill(PASSWORD.trim());
 
   log('Submitting login form...');
-  await page.getByRole('button', { name: 'SIGN IN' }).click();
+  // Use button id directly + also try Enter key as fallback
+  await page.locator('#login').click();
   await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
-  log('Login successful (or check --headed mode if stuck here)');
+  log('Login done — checking URL...');
+  log(`Current URL: ${page.url()}`);
 }
 
 // ---------------------------------------------------------------------------
