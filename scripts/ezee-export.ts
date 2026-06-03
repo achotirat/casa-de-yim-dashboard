@@ -12,6 +12,16 @@
 import { config } from 'dotenv';
 config(); // load .env from project root
 
+// Polyfill DOMParser for Node.js (parsers normally run in browser/jsdom)
+import { JSDOM } from 'jsdom';
+if (typeof (globalThis as any).DOMParser === 'undefined') {
+  (globalThis as any).DOMParser = class {
+    parseFromString(str: string, type: string) {
+      return new JSDOM(str, { contentType: type }).window.document;
+    }
+  };
+}
+
 import { chromium, type Page, type Browser } from 'playwright';
 import { buildSnapshot } from '../src/ui/buildSnapshot.js';
 import { buildReportConfig, type ReportDateConfig } from './ezee-export-config.js';
@@ -159,8 +169,13 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
       { timeout: TIMEOUT }
     );
 
-    // Find the iframe Frame object — EXCLUDE main page frame (which also has "cenreport" in URL)
-    const reportFrame = page.frames().find(f => f !== page.mainFrame() && f.url().includes(urlSuffix));
+    // Find the iframe Frame object — retry up to 3s (race between DOM update and Playwright frame registration)
+    let reportFrame: import('playwright').Frame | undefined;
+    for (let i = 0; i < 15; i++) {
+      reportFrame = page.frames().find(f => f !== page.mainFrame() && f.url().includes(urlSuffix));
+      if (reportFrame) break;
+      await page.waitForTimeout(200);
+    }
     if (!reportFrame) throw new Error(`report_iframe frame not found for suffix "${urlSuffix}"`);
     log(`  Frame: ${reportFrame.url()}`);
 
@@ -171,8 +186,21 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
     await setDates(reportFrame, config);
     await page.waitForTimeout(300);
 
-    // Click "Report" button inside the iframe
-    await reportFrame.locator('input[value="Report"], button:has-text("Report")').first().click({ timeout: TIMEOUT });
+    // Click somewhere neutral first to dismiss any open pickers/dropdowns
+    await reportFrame.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); });
+    await page.waitForTimeout(200);
+
+    // Click "Report" button inside the iframe via JS (avoids overlay/z-index blocking)
+    const btnClicked = await reportFrame.evaluate(() => {
+      const els = [...document.querySelectorAll<HTMLElement>('input, button')];
+      const btn = els.find(el =>
+        ((el as HTMLInputElement).value?.trim() === 'Report' || el.textContent?.trim() === 'Report') &&
+        (el as HTMLElement).offsetWidth > 0
+      );
+      if (btn) { btn.click(); return true; }
+      return false;
+    });
+    if (!btnClicked) throw new Error('Report button not found in iframe');
 
     // Report may open in a new tab or navigate within the iframe
     await page.waitForTimeout(3000);
