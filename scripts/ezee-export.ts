@@ -186,21 +186,10 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
     await setDates(reportFrame, config);
     await page.waitForTimeout(300);
 
-    // Click somewhere neutral first to dismiss any open pickers/dropdowns
-    await reportFrame.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); });
-    await page.waitForTimeout(200);
-
-    // Click "Report" button inside the iframe via JS (avoids overlay/z-index blocking)
-    const btnClicked = await reportFrame.evaluate(() => {
-      const els = [...document.querySelectorAll<HTMLElement>('input, button')];
-      const btn = els.find(el =>
-        ((el as HTMLInputElement).value?.trim() === 'Report' || el.textContent?.trim() === 'Report') &&
-        (el as HTMLElement).offsetWidth > 0
-      );
-      if (btn) { btn.click(); return true; }
-      return false;
-    });
-    if (!btnClicked) throw new Error('Report button not found in iframe');
+    // Wait for the Report button to become visible and click it
+    const reportBtn = reportFrame.locator('input[value="Report"], button:has-text("Report")').first();
+    await reportBtn.waitFor({ state: 'visible', timeout: TIMEOUT });
+    await reportBtn.click();
 
     // Report may open in a new tab or navigate within the iframe
     await page.waitForTimeout(3000);
@@ -247,8 +236,21 @@ function getReportLabel(config: ReportDateConfig): string {
 
 // frame is the report_iframe Frame object (same locator API as Page)
 async function setDates(frame: import('playwright').Frame, config: ReportDateConfig): Promise<void> {
+  // Monthly Statistics: uses Year + Month dropdowns (not a date range picker)
+  if (config.type === 'monthly-current' || config.type === 'monthly-prev') {
+    if (config.dateFrom) {
+      const parts = config.dateFrom.split('/');
+      const month = parseInt(parts[1], 10); // "06" → 6
+      const year = parts[2];               // "2026"
+      await frame.locator('select[id*="Year" i], select[name*="Year" i]').first().selectOption(year);
+      await frame.locator('select[id*="Month" i], select[name*="Month" i]').first().selectOption(String(month));
+      log(`  Month set: ${month}/${year}`);
+    }
+    return;
+  }
+
   if (config.year) {
-    // Yearly Statistics: select year from dropdown inside iframe
+    // Yearly Statistics: select year from dropdown (verified id=ctl0_popup_lstYear)
     await frame.locator('#ctl0_popup_lstYear').selectOption(String(config.year));
     return;
   }
