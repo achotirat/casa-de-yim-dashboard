@@ -9,6 +9,9 @@
  *    eZee UI selectors are marked with "VERIFY:" comments.
  */
 
+import { config } from 'dotenv';
+config(); // load .env from project root
+
 import { chromium, type Page, type Browser } from 'playwright';
 import { buildSnapshot } from '../src/ui/buildSnapshot.js';
 import { buildReportConfig, type ReportDateConfig } from './ezee-export-config.js';
@@ -51,14 +54,13 @@ async function loginEzee(page: Page): Promise<void> {
   log('Navigating to eZee login...');
   await page.goto(EZEE_URL, { waitUntil: 'networkidle', timeout: TIMEOUT });
 
-  // VERIFY: these selectors on first --headed run
-  // Common eZee IPMS login form field names/placeholders
-  await page.fill('input[name="PropertyCode"], input[placeholder*="Property"], input[id*="property" i]', PROPERTY_CODE);
-  await page.fill('input[name="UserName"], input[placeholder*="User"], input[id*="user" i]', USERNAME);
-  await page.fill('input[name="Password"], input[type="password"]', PASSWORD);
+  // Selectors verified against live.ipms247.com/login/ — labels: Username, Password, Property Code
+  await page.getByLabel('Username').fill(USERNAME);
+  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByLabel('Property Code').fill(PROPERTY_CODE);
 
   log('Submitting login form...');
-  await page.click('button[type="submit"], input[type="submit"], button:has-text("Login"), button:has-text("Sign In")');
+  await page.getByRole('button', { name: 'SIGN IN' }).click();
   await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
   log('Login successful (or check --headed mode if stuck here)');
 }
