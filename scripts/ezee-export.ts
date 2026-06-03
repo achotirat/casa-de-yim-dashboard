@@ -83,36 +83,53 @@ const REPORTS_URL = 'https://live.ipms247.com/index.php/page/cenreport.report?un
 // ---------------------------------------------------------------------------
 // Navigate to a specific report + set dates + export HTML
 // ---------------------------------------------------------------------------
+// Category each report lives in (must be expanded before clicking the report)
+const REPORT_CATEGORY: Record<string, string | null> = {
+  'Yearly Statistics':                   'Statistical Report',
+  'Monthly Statistics':                  'Statistical Report',
+  'Contribution Analysis Report':        'Statistical Report',
+  'Country Wise Reservation Statistics': 'Reservation Report',
+  'Arrival List':                        'Reservation Report',
+};
+
 async function exportReport(page: Page, config: ReportDateConfig): Promise<string | null> {
   log(`Exporting: ${config.description}`);
 
   try {
     // Navigate to reports page fresh each time
     await page.goto(REPORTS_URL, { waitUntil: 'load', timeout: TIMEOUT });
-    await page.waitForTimeout(1000); // let sidebar JS render
+    await page.waitForTimeout(1500); // let sidebar JS render
 
-    // Use the sidebar search box to find the report
     const reportLabel = getReportLabel(config);
-    log(`  Searching sidebar for: "${reportLabel}"`);
-    const searchBox = page.locator('input[placeholder="Search"]').first();
-    await searchBox.click();
-    await searchBox.fill(reportLabel);
-    await page.waitForTimeout(800); // wait for search filter to apply
+    log(`  Clicking report: "${reportLabel}"`);
 
-    // Click the matching report link in the sidebar
-    await page.locator(`li a:has-text("${reportLabel}")`).first().click();
+    // Expand the category if collapsed (Statistical Report is collapsed by default)
+    const category = REPORT_CATEGORY[reportLabel];
+    if (category) {
+      const catHeader = page.locator(`.sidebar-category:has-text("${category}"), li:has-text("${category}") > a, span:has-text("${category}")`).first();
+      // Check if the report link is already visible; if not, click the category header
+      const alreadyVisible = await page.locator(`li a:has-text("${reportLabel}")`).isVisible().catch(() => false);
+      if (!alreadyVisible) {
+        log(`  Expanding category: "${category}"`);
+        await page.locator(`text="${category}"`).first().click();
+        await page.waitForTimeout(600);
+      }
+    }
+
+    // Click the report link in the sidebar
+    await page.locator(`li a:has-text("${reportLabel}")`).first().click({ timeout: TIMEOUT });
     await page.waitForLoadState('load', { timeout: TIMEOUT });
-    await page.waitForTimeout(500); // let form render
+    await page.waitForTimeout(800); // let form render
 
     // Set date / year parameters
     await setDates(page, config);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
-    // Click "Report" button (blue button = HTML report; "Export" = Excel, skip that)
-    await page.locator('button:has-text("Report")').first().click();
+    // Click "Report" button (blue = HTML; "Export" = Excel)
+    await page.locator('button:has-text("Report")').first().click({ timeout: TIMEOUT });
 
-    // Wait for report — may open in new tab
-    await page.waitForTimeout(2000);
+    // Report may open in new tab
+    await page.waitForTimeout(3000);
     const allPages = page.context().pages();
     const reportPage = allPages.length > 1 ? allPages[allPages.length - 1] : page;
     await reportPage.waitForLoadState('load', { timeout: TIMEOUT });
@@ -158,22 +175,28 @@ async function setDates(page: Page, config: ReportDateConfig): Promise<void> {
   if (!config.dateFrom && !config.dateTo) return;
 
   // eZee uses jQuery datepicker with disabled inputs — must use jQuery API to set values
-  const result = await page.evaluate(([from, to]: [string, string]) => {
-    const $ = (window as any).$;
-    if (!$) return 'no-jquery';
-    // Find visible datepicker inputs (first = from, second = to)
-    const inputs = $('input.hasDatepicker:visible');
-    if (inputs.length === 0) return 'no-visible-inputs';
-    if (from) {
-      inputs.eq(0).datepicker('setDate', from);
-      inputs.eq(0).trigger('change');
+  const result = await page.evaluate(([from, to]) => {
+    try {
+      const jq = (window as any).jQuery || (window as any).$;
+      if (!jq) return 'no-jquery';
+      const inputs = jq('input.hasDatepicker').filter((_: number, el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      });
+      if (!inputs || inputs.length === 0) return 'no-visible-datepicker-inputs';
+      if (from) {
+        inputs.eq(0).datepicker('setDate', from);
+        inputs.eq(0).trigger('change');
+      }
+      if (to && inputs.length > 1) {
+        inputs.eq(1).datepicker('setDate', to);
+        inputs.eq(1).trigger('change');
+      }
+      return `ok: found ${inputs.length} inputs from="${from}" to="${to}"`;
+    } catch (e: any) {
+      return `error: ${e.message}`;
     }
-    if (to && inputs.length > 1) {
-      inputs.eq(1).datepicker('setDate', to);
-      inputs.eq(1).trigger('change');
-    }
-    return `ok: set ${inputs.length} inputs from="${from}" to="${to}"`;
-  }, [config.dateFrom ?? '', config.dateTo ?? ''] as [string, string]);
+  }, [config.dateFrom ?? '', config.dateTo ?? '']);
 
   log(`  Date set: ${result}`);
 }
