@@ -178,7 +178,7 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
     const fl = page.frameLocator('#report_iframe');
 
     // Wait for Report button to appear (implies iframe content has loaded)
-    const reportBtn = fl.locator('input[value="Report"], button:has-text("Report")').first();
+    const reportBtn = fl.locator('#ctl0_popup_btnReport, input[value="Report"], button:has-text("Report"), a.btn1:has-text("Report")').first();
     log(`  Waiting for Report button in #report_iframe...`);
     await reportBtn.waitFor({ state: 'visible', timeout: TIMEOUT });
 
