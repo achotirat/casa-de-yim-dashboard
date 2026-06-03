@@ -157,17 +157,22 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
 
     if (!clicked) throw new Error(`Could not find sidebar item: "${reportLabel}"`);
 
-    // Wait for report_iframe to update to this specific report's URL
+    // Wait for report_iframe to update to this specific report's URL AND fully load
     const urlSuffix = IFRAME_URL_SUFFIX[reportLabel] ?? reportLabel.toLowerCase().replace(/\s+/g, '');
-    log(`  Waiting for iframe URL suffix: "${urlSuffix}"`);
+    log(`  Waiting for iframe to load: "${urlSuffix}"`);
     await page.waitForFunction(
       (suffix: string) => {
         const iframe = document.getElementById('report_iframe') as HTMLIFrameElement | null;
-        return !!(iframe && iframe.src.includes(suffix) && iframe.offsetWidth > 0);
+        if (!iframe || !iframe.src.includes(suffix) || !iframe.offsetWidth) return false;
+        try {
+          // Also wait for the iframe document to be fully loaded
+          return iframe.contentDocument?.readyState === 'complete';
+        } catch { return false; }
       },
       urlSuffix,
       { timeout: TIMEOUT }
     );
+    log(`  iframe loaded ✓`);
 
     // Use frameLocator('#report_iframe') — handles frame timing automatically, no Frame object needed
     const fl = page.frameLocator('#report_iframe');
