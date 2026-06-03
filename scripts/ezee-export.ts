@@ -69,7 +69,7 @@ async function loginEzee(page: Page): Promise<void> {
 
   log('Submitting login form...');
   // Use button id directly + also try Enter key as fallback
-  await page.locator('#login').click();
+  await page.locator('button#login').click();
   await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
   log('Login done — checking URL...');
   log(`Current URL: ${page.url()}`);
