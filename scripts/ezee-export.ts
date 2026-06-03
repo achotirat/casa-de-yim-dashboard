@@ -365,8 +365,14 @@ async function main() {
       notify('Casa de Yim Export ✅', `อัปโหลด ${htmls.length} reports สำเร็จ`);
     } else {
       log('DRY RUN: skipping upload');
+      // Show parse result per HTML file for debugging
+      const { parseFile } = await import('../src/parser/index.js');
+      htmls.forEach((html, i) => {
+        const { type, result } = parseFile(html);
+        log(`  [${i}] detected=${type} ok=${result.ok} bytes=${html.length}`);
+      });
       const { snapshot, errors } = buildSnapshot(htmls);
-      log(`Parsed snapshot: dataAsOf=${snapshot.dataAsOf} yearly=${!!snapshot.yearly} monthly=${snapshot.monthly?.length ?? 0}`);
+      log(`Parsed snapshot: dataAsOf=${snapshot.dataAsOf} yearly=${!!snapshot.yearly} channels=${!!snapshot.channels} countries=${!!snapshot.countries} arrivals=${!!snapshot.arrivals} monthly=${snapshot.monthly?.length ?? 0}`);
       if (errors.length) log(`Errors: ${errors.join(', ')}`);
     }
 
