@@ -21,4 +21,18 @@ describe('buildSnapshot', () => {
     const { errors } = buildSnapshot(['<html><body>nope</body></html>']);
     expect(errors.length).toBe(1);
   });
+
+  it('adds monthly report to monthly array', () => {
+    const { snapshot, errors } = buildSnapshot([fx('monthly.html')]);
+    expect(errors).toHaveLength(0);
+    expect(snapshot.monthly).toHaveLength(1);
+    expect(snapshot.monthly![0].month).toBe(5);
+    expect(snapshot.monthly![0].year).toBe(2026);
+    expect(snapshot.monthly![0].days).toHaveLength(31);
+  });
+
+  it('replaces same month and keeps sorted order', () => {
+    const { snapshot } = buildSnapshot([fx('monthly.html'), fx('monthly.html')]);
+    expect(snapshot.monthly).toHaveLength(1);
+  });
 });

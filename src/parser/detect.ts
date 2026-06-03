@@ -13,6 +13,7 @@ export function detectReportType(html: string): ReportType {
   if (t.includes('Contribution Analysis Report')) return 'channel';
   if (t.includes('Country Wise Reservation Statistics')) return 'country';
   if (t.includes('Arrival List')) return 'arrivals';
+  if (t.includes('Monthly Statistics')) return 'monthly';
   return 'unknown';
 }
 

@@ -1,6 +1,6 @@
 import { parseFile, extractDataAsOf } from '../parser';
 import type {
-  Snapshot, YearlyReport, ChannelReport, CountryReport, ArrivalsReport,
+  Snapshot, YearlyReport, ChannelReport, CountryReport, ArrivalsReport, MonthlyReport,
 } from '../types';
 
 export interface BuildResult {
@@ -27,6 +27,14 @@ export function buildSnapshot(htmls: string[]): BuildResult {
       case 'channel': snapshot.channels = result.data as ChannelReport; break;
       case 'country': snapshot.countries = result.data as CountryReport; break;
       case 'arrivals': snapshot.arrivals = result.data as ArrivalsReport; break;
+      case 'monthly': {
+        const rep = result.data as MonthlyReport;
+        const arr = snapshot.monthly ?? [];
+        const idx = arr.findIndex((m) => m.month === rep.month && m.year === rep.year);
+        if (idx >= 0) arr[idx] = rep; else arr.push(rep);
+        snapshot.monthly = arr.sort((a, b) => a.year * 12 + a.month - (b.year * 12 + b.month));
+        break;
+      }
     }
   }
 
