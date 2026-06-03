@@ -69,20 +69,14 @@ async function loginEzee(page: Page): Promise<void> {
 
   log('Submitting login form...');
   await page.locator('button#login').click();
+
+  // eZee uses AJAX login — wait for product selection page to render
+  log('Waiting for product selection page...');
+  await page.locator('button[onclick*="absfront"]').waitFor({ state: 'visible', timeout: 30000 });
+  log('Product selection page ready — clicking PMS...');
+  await page.locator('button[onclick*="absfront"]').click();
   await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
-  log(`Post-login URL: ${page.url()}`);
-
-  // eZee shows a product selection page after login — click PMS
-  const pmsBtnSelector = 'button:has-text("Property Management System"), button[onclick*="absfront"]';
-  const pmsBtn = page.locator(pmsBtnSelector).first();
-  const hasPmsBtn = await pmsBtn.isVisible({ timeout: 5000 }).catch(() => false);
-  if (hasPmsBtn) {
-    log('Product selection page detected — clicking PMS...');
-    await pmsBtn.click();
-    await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
-    log(`After PMS click URL: ${page.url()}`);
-  }
-
+  log(`After PMS click URL: ${page.url()}`);
   log('Login complete ✓');
 }
 
