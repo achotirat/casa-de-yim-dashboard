@@ -52,7 +52,7 @@ function notify(title: string, msg: string) {
 // ---------------------------------------------------------------------------
 async function loginEzee(page: Page): Promise<void> {
   log('Navigating to eZee login...');
-  await page.goto(EZEE_URL, { waitUntil: 'networkidle', timeout: TIMEOUT });
+  await page.goto(EZEE_URL, { waitUntil: 'load', timeout: TIMEOUT });
 
   // Selectors verified against live.ipms247.com/login/ — exact IDs from page source
   log(`Filling username="${USERNAME.trim()}" hotelcode="${PROPERTY_CODE.trim()}" password length=${PASSWORD.trim().length}`);
@@ -73,7 +73,7 @@ async function loginEzee(page: Page): Promise<void> {
   // eZee auto-redirects to stayview after login — just wait for URL to leave /login/
   log('Waiting for redirect away from login...');
   await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 30000 });
-  await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
+  await page.waitForLoadState('load', { timeout: TIMEOUT });
   log(`Login complete ✓  URL: ${page.url()}`);
 }
 
@@ -88,25 +88,25 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
 
   try {
     // Navigate directly to reports page
-    await page.goto(REPORTS_URL, { waitUntil: 'networkidle', timeout: TIMEOUT });
+    await page.goto(REPORTS_URL, { waitUntil: 'load', timeout: TIMEOUT });
 
     // Select the specific report from the list
     const reportLabel = getReportLabel(config);
     log(`  Clicking report: "${reportLabel}"`);
     await page.click(`text="${reportLabel}"`, { timeout: TIMEOUT });
-    await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
+    await page.waitForLoadState('load', { timeout: TIMEOUT });
 
     // Set date parameters
     await setDates(page, config);
 
     // Click View/Generate to run the report
     await page.click('input[type="submit"], button:has-text("View"), button:has-text("Generate"), input[value="View Report"], input[value="Generate"]', { timeout: TIMEOUT });
-    await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
+    await page.waitForLoadState('load', { timeout: TIMEOUT });
 
     // Get report HTML — check if it opened in a new tab
     const pages = page.context().pages();
     const reportPage = pages.length > 1 ? pages[pages.length - 1] : page;
-    await reportPage.waitForLoadState('networkidle', { timeout: TIMEOUT });
+    await reportPage.waitForLoadState('load', { timeout: TIMEOUT });
 
     const html = await reportPage.content();
     log(`  ✓ ${config.id} — ${html.length} bytes`);
