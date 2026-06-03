@@ -54,10 +54,10 @@ async function loginEzee(page: Page): Promise<void> {
   log('Navigating to eZee login...');
   await page.goto(EZEE_URL, { waitUntil: 'networkidle', timeout: TIMEOUT });
 
-  // Selectors verified against live.ipms247.com/login/ — labels: Username, Password, Property Code
-  await page.getByLabel('Username').fill(USERNAME);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByLabel('Property Code').fill(PROPERTY_CODE);
+  // Selectors verified against live.ipms247.com/login/ — exact IDs from page source
+  await page.locator('#username').fill(USERNAME);
+  await page.locator('#password').fill(PASSWORD);
+  await page.locator('#hotelcode').fill(PROPERTY_CODE);
 
   log('Submitting login form...');
   await page.getByRole('button', { name: 'SIGN IN' }).click();
