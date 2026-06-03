@@ -169,26 +169,29 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
       { timeout: TIMEOUT }
     );
 
-    // Find the iframe Frame object — retry up to 3s (race between DOM update and Playwright frame registration)
-    let reportFrame: import('playwright').Frame | undefined;
-    for (let i = 0; i < 15; i++) {
+    // Use frameLocator('#report_iframe') — handles frame timing automatically, no Frame object needed
+    const fl = page.frameLocator('#report_iframe');
+
+    // Wait for Report button to appear (implies iframe content has loaded)
+    const reportBtn = fl.locator('input[value="Report"], button:has-text("Report")').first();
+    log(`  Waiting for Report button in #report_iframe...`);
+    await reportBtn.waitFor({ state: 'visible', timeout: TIMEOUT });
+
+    // Also find the Frame object for evaluate calls (datepicker/month selectors)
+    let reportFrame = page.frames().find(f => f !== page.mainFrame() && f.url().includes(urlSuffix));
+    if (!reportFrame) {
+      await page.waitForTimeout(500);
       reportFrame = page.frames().find(f => f !== page.mainFrame() && f.url().includes(urlSuffix));
-      if (reportFrame) break;
-      await page.waitForTimeout(200);
     }
-    if (!reportFrame) throw new Error(`report_iframe frame not found for suffix "${urlSuffix}"`);
-    log(`  Frame: ${reportFrame.url()}`);
+    log(`  Frame: ${reportFrame?.url() ?? 'using frameLocator only'}`);
 
-    await reportFrame.waitForLoadState('load', { timeout: TIMEOUT });
-    await page.waitForTimeout(500);
-
-    // Set date / year parameters using Frame API
-    await setDates(reportFrame, config);
+    // Set date / year parameters
+    if (reportFrame) {
+      await setDates(reportFrame, config);
+    }
     await page.waitForTimeout(300);
 
-    // Wait for the Report button to become visible and click it
-    const reportBtn = reportFrame.locator('input[value="Report"], button:has-text("Report")').first();
-    await reportBtn.waitFor({ state: 'visible', timeout: TIMEOUT });
+    // Click Report button via frameLocator (most reliable)
     await reportBtn.click();
 
     // Report may open in a new tab or navigate within the iframe
