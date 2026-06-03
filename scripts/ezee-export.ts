@@ -103,30 +103,48 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
     const reportLabel = getReportLabel(config);
     log(`  Clicking report: "${reportLabel}"`);
 
-    // Expand the category if collapsed (Statistical Report is collapsed by default)
+    // Expand the category if needed (eZee sidebar uses non-<a> click handlers)
     const category = REPORT_CATEGORY[reportLabel];
     if (category) {
-      const catHeader = page.locator(`.sidebar-category:has-text("${category}"), li:has-text("${category}") > a, span:has-text("${category}")`).first();
-      // Check if the report link is already visible; if not, click the category header
-      const alreadyVisible = await page.locator(`li a:has-text("${reportLabel}")`).isVisible().catch(() => false);
+      const alreadyVisible = await page.evaluate((label) => {
+        return [...document.querySelectorAll('li')].some(
+          el => el.textContent?.trim().startsWith(label) && (el as HTMLElement).offsetWidth > 0
+        );
+      }, reportLabel).catch(() => false);
       if (!alreadyVisible) {
         log(`  Expanding category: "${category}"`);
-        await page.locator(`text="${category}"`).first().click();
-        await page.waitForTimeout(600);
+        await page.evaluate((cat) => {
+          const els = [...document.querySelectorAll('li, div, span, h4, h5')];
+          const header = els.find(el =>
+            el.textContent?.trim() === cat && (el as HTMLElement).offsetWidth > 0
+          );
+          if (header) (header as HTMLElement).click();
+        }, category);
+        await page.waitForTimeout(800);
       }
     }
 
-    // Click the report link in the sidebar
-    await page.locator(`li a:has-text("${reportLabel}")`).first().click({ timeout: TIMEOUT });
-    await page.waitForLoadState('load', { timeout: TIMEOUT });
-    await page.waitForTimeout(800); // let form render
+    // Click the report via JS (sidebar uses li/span with onclick, not <a> tags)
+    const clicked = await page.evaluate((label) => {
+      const els = [...document.querySelectorAll('li, span, div')];
+      const target = els.find(el =>
+        el.textContent?.trim().startsWith(label) &&
+        (el as HTMLElement).offsetWidth > 0 &&
+        (el as HTMLElement).offsetHeight > 0
+      );
+      if (target) { (target as HTMLElement).click(); return true; }
+      return false;
+    }, reportLabel);
+
+    if (!clicked) throw new Error(`Could not find sidebar item: "${reportLabel}"`);
+    await page.waitForTimeout(1200); // wait for AJAX form update
 
     // Set date / year parameters
     await setDates(page, config);
     await page.waitForTimeout(500);
 
-    // Click "Report" button (blue = HTML; "Export" = Excel)
-    await page.locator('button:has-text("Report")').first().click({ timeout: TIMEOUT });
+    // Click "Report" button — eZee uses input[value="Report"] or button
+    await page.locator('input[value="Report"], button:has-text("Report")').first().click({ timeout: TIMEOUT });
 
     // Report may open in new tab
     await page.waitForTimeout(3000);
