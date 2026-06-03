@@ -55,9 +55,10 @@ async function loginEzee(page: Page): Promise<void> {
   await page.goto(EZEE_URL, { waitUntil: 'networkidle', timeout: TIMEOUT });
 
   // Selectors verified against live.ipms247.com/login/ — exact IDs from page source
-  await page.locator('#username').fill(USERNAME);
-  await page.locator('#password').fill(PASSWORD);
-  await page.locator('#hotelcode').fill(PROPERTY_CODE);
+  // Use pressSequentially to fire keyboard events (required by eZee's form JS)
+  await page.locator('#username').pressSequentially(USERNAME.trim());
+  await page.locator('#password').pressSequentially(PASSWORD.trim());
+  await page.locator('#hotelcode').pressSequentially(PROPERTY_CODE.trim());
 
   log('Submitting login form...');
   await page.getByRole('button', { name: 'SIGN IN' }).click();
