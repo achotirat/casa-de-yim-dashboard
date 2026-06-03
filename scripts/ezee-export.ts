@@ -68,12 +68,26 @@ async function loginEzee(page: Page): Promise<void> {
   await page.locator('#password').fill(PASSWORD.trim());
 
   log('Submitting login form...');
-  // Use button id directly + also try Enter key as fallback
   await page.locator('button#login').click();
   await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
-  log('Login done — checking URL...');
-  log(`Current URL: ${page.url()}`);
+  log(`Post-login URL: ${page.url()}`);
+
+  // eZee shows a product selection page after login — click PMS
+  const pmsBtnSelector = 'button:has-text("Property Management System"), button[onclick*="absfront"]';
+  const pmsBtn = page.locator(pmsBtnSelector).first();
+  const hasPmsBtn = await pmsBtn.isVisible({ timeout: 5000 }).catch(() => false);
+  if (hasPmsBtn) {
+    log('Product selection page detected — clicking PMS...');
+    await pmsBtn.click();
+    await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
+    log(`After PMS click URL: ${page.url()}`);
+  }
+
+  log('Login complete ✓');
 }
+
+// Reports base URL (verified by user)
+const REPORTS_URL = 'https://live.ipms247.com/index.php/page/cenreport.report?unity=1';
 
 // ---------------------------------------------------------------------------
 // Navigate to a specific report + set dates + export HTML
@@ -82,40 +96,41 @@ async function exportReport(page: Page, config: ReportDateConfig): Promise<strin
   log(`Exporting: ${config.description}`);
 
   try {
-    // VERIFY on first --headed run:
-    // The exact navigation path in eZee to reach each report type.
+    // Navigate directly to reports page
+    await page.goto(REPORTS_URL, { waitUntil: 'networkidle', timeout: TIMEOUT });
 
-    // Navigate to reports section
-    // VERIFY: adjust selector to match actual eZee Reports menu item
-    await page.click('a:has-text("Reports"), [href*="report" i], #reportMenu', { timeout: TIMEOUT });
-    await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
-
-    // Select the specific report
-    // VERIFY: these text labels match eZee report names exactly
+    // Select the specific report from the list
     const reportLabel = getReportLabel(config);
+    log(`  Clicking report: "${reportLabel}"`);
     await page.click(`text="${reportLabel}"`, { timeout: TIMEOUT });
     await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
 
     // Set date parameters
     await setDates(page, config);
 
-    // Click Generate/View
-    // VERIFY: button label
-    await page.click('button:has-text("Generate"), button:has-text("View"), button:has-text("Search"), input[value="Generate"]', { timeout: TIMEOUT });
+    // Click View/Generate to run the report
+    await page.click('input[type="submit"], button:has-text("View"), button:has-text("Generate"), input[value="View Report"], input[value="Generate"]', { timeout: TIMEOUT });
     await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
 
-    // Get the HTML of the report
-    // VERIFY: eZee may open report in new tab or iframe
-    const html = await page.content();
+    // Get report HTML — check if it opened in a new tab
+    const pages = page.context().pages();
+    const reportPage = pages.length > 1 ? pages[pages.length - 1] : page;
+    await reportPage.waitForLoadState('networkidle', { timeout: TIMEOUT });
+
+    const html = await reportPage.content();
     log(`  ✓ ${config.id} — ${html.length} bytes`);
+
+    // Close popup tab if it opened in new tab
+    if (reportPage !== page) await reportPage.close();
+
     return html;
 
   } catch (err) {
     warn(`  Failed to export ${config.id}: ${(err as Error).message}`);
-    // Save screenshot for debugging
     try {
       const screenshotPath = `${process.env.HOME}/logs/ezee-error-${config.id}.png`;
       await page.screenshot({ path: screenshotPath });
+      log(`  Screenshot saved: ${screenshotPath}`);
     } catch { /* ignore */ }
     return null;
   }
