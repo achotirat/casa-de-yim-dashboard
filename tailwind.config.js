@@ -15,6 +15,7 @@ export default {
         'card-2':  'var(--card-2)',
         ink:       'var(--ink)',
         muted:     'var(--muted)',
+        line:      'var(--line)',
       },
       fontFamily: {
         display: ["'Cormorant Garamond'", 'serif'],
