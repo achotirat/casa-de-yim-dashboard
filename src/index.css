@@ -1,3 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --shell-1: #103A34;
+  --shell-2: #0B2A26;
+  --primary: #1E6E62;
+  --accent:  #C56A45;
+  --accent-2:#A8542F;
+  --gold:    #E2A95B;
+  --sand:    #E7DFD2;
+  --panel:   #FBF8F2;
+  --card:    #FFFFFF;
+  --card-2:  #F3EEE5;
+  --ink:     #241D18;
+  --muted:   #8C8377;
+  --line:    rgba(36,29,24,.10);
+}
+
+html { background: var(--sand); }
+
+body {
+  font-family: 'Noto Sans Thai', 'Manrope', system-ui, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
