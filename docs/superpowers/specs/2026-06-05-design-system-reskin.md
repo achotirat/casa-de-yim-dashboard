@@ -19,9 +19,10 @@ Apply the "Lagoon & Terracotta" design language from the reference file to the e
 | Role | Family | Weight |
 |------|--------|--------|
 | Display headings (h1, h3, section titles) | Cormorant Garamond | 600, italic 600 |
-| Numbers, UI labels, buttons | Manrope | 400, 600, 700, 800 |
-| Metadata, chart axes | IBM Plex Mono | 400, 500 |
+| Numbers, UI labels, buttons, metadata, chart axes | Manrope | 400, 600, 700, 800 |
 | Thai body text | Noto Sans Thai | 400, 500, 600, 700 |
+
+Manrope is removed. Anywhere the reference used mono (chart axes, section metadata), Manrope is used instead.
 
 ### CSS Custom Properties (added to `:root` in `index.css`)
 
@@ -46,7 +47,7 @@ Apply the "Lagoon & Terracotta" design language from the reference file to the e
 ## Component Changes
 
 ### 1. `index.html`
-- Add Google Fonts `<link>` preconnect + stylesheet for Cormorant Garamond, Manrope, IBM Plex Mono, Noto Sans Thai.
+- Add Google Fonts `<link>` preconnect + stylesheet for Cormorant Garamond, Manrope, Manrope, Noto Sans Thai.
 
 ### 2. `index.css`
 - Add `:root` CSS custom properties above.
@@ -76,7 +77,6 @@ theme: {
       display: ["'Cormorant Garamond'", 'serif'],
       sans: ["'Noto Sans Thai'", "'Manrope'", 'system-ui', 'sans-serif'],
       num: ["'Manrope'", 'sans-serif'],
-      mono: ["'IBM Plex Mono'", 'monospace'],
     },
   },
 }
@@ -110,14 +110,14 @@ Each card:
 Thin shared wrapper used by TrendChart, ForecastSection, ForwardPace, MixPanels:
 - Props: `alt?: boolean` (uses `var(--card-2)` bg), `children`
 - White bg (or card-2 if alt), `border-radius: 22px`, `var(--line)` border, subtle shadow
-- Section heading via `<SectionHead title="…" italic="…" meta="…" />` sub-component: Cormorant Garamond h3, italic part in `var(--accent-2)`, meta in IBM Plex Mono muted
+- Section heading via `<SectionHead title="…" italic="…" meta="…" />` sub-component: Cormorant Garamond h3, italic part in `var(--accent-2)`, meta in Manrope muted
 
 ### 8. `TrendChart.tsx` — Color update
 Keep Recharts. Update only:
 - Actual bars: `var(--shell-1)` (`#103A34`)
 - On-the-books bars: `#B6C2C6`
 - ADR line: `var(--accent)` (`#C56A45`)
-- Axis font: IBM Plex Mono 10px, `var(--muted)`
+- Axis font: Manrope 10px, `var(--muted)`
 - Wrap in `<SectionCard>`
 
 ### 9. `ForecastSection.tsx` — Color + stat strip
