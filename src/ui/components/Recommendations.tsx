@@ -75,9 +75,6 @@ export default function Recommendations({
           <button onClick={askAi} disabled={busy} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 11, padding: '9px 16px', fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 12, fontWeight: 700, cursor: busy ? 'not-allowed' : 'pointer', opacity: busy ? .7 : 1 }}>
             {busy ? 'กำลังถาม AI…' : '✨ ถาม AI'}
           </button>
-          <button style={{ background: 'rgba(255,255,255,.15)', color: '#fff', border: 'none', borderRadius: 11, padding: '9px 16px', fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-            ดูทั้งหมด
-          </button>
         </div>
       </div>
 
