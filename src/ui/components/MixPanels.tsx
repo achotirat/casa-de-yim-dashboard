@@ -21,7 +21,7 @@ export default function MixPanels({
   const totalRev = countryRows.reduce((s, r) => s + (r.revenue ?? 0), 0);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.05fr', gap: 16 }}>
+    <div className="cdy-mix-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.05fr', gap: 16 }}>
 
       {/* Channels */}
       <SectionCard>

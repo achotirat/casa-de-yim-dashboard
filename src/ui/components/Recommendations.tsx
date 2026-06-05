@@ -46,7 +46,7 @@ export default function Recommendations({
   }
 
   return (
-    <div style={{ borderRadius: 22, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1.4fr 1fr' }}>
+    <div className="cdy-rec-grid" style={{ borderRadius: 22, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1.4fr 1fr' }}>
 
       {/* Left: green gradient */}
       <div style={{ background: 'linear-gradient(140deg, #2E8576, #11463E)', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}>

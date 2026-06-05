@@ -8,7 +8,7 @@ export default function PeriodToggle({
   const order: Period[] = hasWeeklyData ? [...BASE_ORDER, 'lastWeek'] : BASE_ORDER;
 
   return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+    <div className="cdy-chips" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
       {order.map((p) => {
         const active = p === value;
         return (

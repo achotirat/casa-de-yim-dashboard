@@ -11,7 +11,7 @@ export function SectionHead({ title, italic, meta, right }: SectionHeadProps) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 14, gap: 18 }}>
       <div>
-        <h3 style={{
+        <h3 className="cdy-section-h3" style={{
           fontFamily: "'Cormorant Garamond', serif",
           fontWeight: 600, fontSize: 22, lineHeight: 1.1,
           color: 'var(--ink)', letterSpacing: '-.2px', margin: 0,

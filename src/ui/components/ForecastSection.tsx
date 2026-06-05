@@ -43,7 +43,7 @@ export default function ForecastSection({ yearly, dataAsOf }: { yearly?: YearlyR
       />
 
       {/* Stat strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+      <div className="cdy-stat-strip" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
         {stats.map((s) => (
           <div key={s.label} style={{ background: 'var(--card)', borderRadius: 16, padding: '14px 16px', border: '1px solid var(--line)' }}>
             <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '1.4px' }}>{s.label}</div>

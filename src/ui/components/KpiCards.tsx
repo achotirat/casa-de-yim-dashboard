@@ -84,7 +84,7 @@ export default function KpiCards({
   const revPar = weeklyOverride?.revPar ?? cur?.revPar ?? null;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+    <div className="cdy-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
       <KpiCard label="Occupancy" thaiPill="ห้องพักที่ขายได้"  value={occ}    suffix="%" glyph="Occ"
         mom={pctDelta(occ,    prevMonth?.occPct ?? null)} yoy={pctDelta(occ,    prevYear?.occPct ?? null)} />
       <KpiCard label="ADR"       thaiPill="ราคาเฉลี่ย/คืน"   value={adr}    prefix="฿" glyph="ADR"

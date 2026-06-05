@@ -72,12 +72,12 @@ export default function Dashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Page head */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, padding: '2px 4px 4px' }}>
+      <div className="cdy-page-head" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, padding: '2px 4px 4px' }}>
         <div>
-          <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>
+          <div className="cdy-eyebrow" style={{ fontFamily: "'Manrope', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6, whiteSpace: 'nowrap' }}>
             {monthLabel} {dataAsOf.slice(0, 4)} · ข้อมูล ณ {dataAsOf}
           </div>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 36, lineHeight: 1.05, letterSpacing: '-.5px', color: 'var(--ink)', margin: 0 }}>
+          <h1 className="cdy-h1" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 36, lineHeight: 1.05, letterSpacing: '-.5px', color: 'var(--ink)', margin: 0 }}>
             ผลประกอบการ<i style={{ fontStyle: 'italic', color: 'var(--accent-2)' }}> {PERIOD_DESC[period]}</i>
           </h1>
           <div style={{ fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 13, color: 'var(--muted)', fontWeight: 500, marginTop: 4 }}>

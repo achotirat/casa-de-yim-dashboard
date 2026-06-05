@@ -10,7 +10,7 @@ export default function App() {
     <AuthGate>
       <div style={{ minHeight: '100vh', background: 'var(--sand)' }}>
         {/* Dark header bar */}
-        <header style={{
+        <header className="cdy-header" style={{
           background: 'linear-gradient(150deg, var(--shell-1), var(--shell-2))',
           padding: '0 24px',
           height: 60,
@@ -32,12 +32,12 @@ export default function App() {
             <span style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 20, color: '#fff', lineHeight: 1 }}>
               Casa de Yim
             </span>
-            <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,.5)' }}>
+            <span className="cdy-wordmark-sub" style={{ fontFamily: "'Manrope', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,.5)' }}>
               Krabi · Dashboard
             </span>
           </div>
           {/* Tab nav */}
-          <nav style={{ display: 'flex', gap: 20, marginLeft: 20 }}>
+          <nav className="cdy-tab-nav" style={{ display: 'flex', gap: 20, marginLeft: 20 }}>
             {(['dashboard', 'upload'] as const).map((t) => (
               <button
                 key={t}
@@ -59,8 +59,8 @@ export default function App() {
         </header>
 
         {/* Content panel */}
-        <main style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{
+        <main className="cdy-main" style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
+          <div className="cdy-panel" style={{
             background: 'var(--panel)',
             borderRadius: 28,
             padding: '24px 28px 32px',

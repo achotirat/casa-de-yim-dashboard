@@ -27,3 +27,39 @@ body {
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
 }
+
+/* ── Mobile responsive ─────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Header */
+  .cdy-header        { height: auto !important; padding: 10px 14px !important; flex-wrap: wrap !important; gap: 10px !important; }
+  .cdy-wordmark-sub  { display: none !important; }
+  .cdy-tab-nav       { margin-left: 0 !important; gap: 14px !important; }
+
+  /* Main + panel wrapper */
+  .cdy-main          { padding: 8px !important; }
+  .cdy-panel         { padding: 16px 14px 24px !important; border-radius: 20px !important; }
+
+  /* Page head — stack vertically, chips below */
+  .cdy-page-head     { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+  .cdy-h1            { font-size: 26px !important; }
+  .cdy-eyebrow       { font-size: 10px !important; white-space: normal !important; }
+
+  /* Section head titles */
+  .cdy-section-h3    { font-size: 18px !important; }
+
+  /* KPI cards: single column */
+  .cdy-kpi-grid      { grid-template-columns: 1fr !important; }
+
+  /* Forecast stat strip: single column */
+  .cdy-stat-strip    { grid-template-columns: 1fr !important; }
+
+  /* MixPanels: single column */
+  .cdy-mix-grid      { grid-template-columns: 1fr !important; }
+
+  /* Recommendations: single column */
+  .cdy-rec-grid      { grid-template-columns: 1fr !important; }
+
+  /* PeriodToggle chips: horizontal scroll */
+  .cdy-chips         { flex-wrap: nowrap !important; overflow-x: auto !important; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .cdy-chips::-webkit-scrollbar { display: none; }
+}
