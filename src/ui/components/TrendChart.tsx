@@ -1,7 +1,8 @@
-import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import type { YearlyReport } from '../../types';
+import SectionCard, { SectionHead } from './SectionCard';
 
-const MONTH_ABBR = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const MONTH_ABBR = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
 export default function TrendChart({ yearly, dataAsOf }: { yearly?: YearlyReport; dataAsOf: string }) {
   if (!yearly) return null;
@@ -14,23 +15,26 @@ export default function TrendChart({ yearly, dataAsOf }: { yearly?: YearlyReport
   }));
 
   return (
-    <div className="bg-white rounded-xl p-5 shadow">
-      <h3 className="text-sm font-semibold text-slate-700 mb-3">แนวโน้มรายเดือน — สีเข้ม = actual, สีอ่อน = จองล่วงหน้า</h3>
+    <SectionCard>
+      <SectionHead
+        title="แนวโน้ม"
+        italic="รายเดือน"
+        meta="สีเข้ม = actual · สีอ่อน = จองล่วงหน้า"
+      />
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart data={rows}>
-          <XAxis dataKey="name" fontSize={11} />
-          <YAxis yAxisId="left" fontSize={11} unit="%" />
-          <YAxis yAxisId="right" orientation="right" fontSize={11} />
+          <XAxis dataKey="name" fontSize={11} fontFamily="'Manrope', sans-serif" tick={{ fill: 'var(--muted)' }} />
+          <YAxis yAxisId="occ" fontSize={11} fontFamily="'Manrope', sans-serif" tick={{ fill: 'var(--muted)' }} unit="%" domain={[0, 100]} width={38} />
+          <YAxis yAxisId="adr" orientation="right" fontSize={11} fontFamily="'Manrope', sans-serif" tick={{ fill: 'var(--muted)' }} width={52} />
           <Tooltip />
-          <Legend />
-          <Bar yAxisId="left" dataKey="occ" name="Occ%">
-            {rows.map((r, i) => (
-              <Cell key={i} fill={r.isActual ? '#1e293b' : '#94a3b8'} />
-            ))}
+          <Bar yAxisId="occ" dataKey="occ" name="Occ%">
+            {rows.map((r, i) => <Cell key={i} fill={r.isActual ? '#103A34' : '#B6C2C6'} />)}
           </Bar>
-          <Line yAxisId="right" dataKey="adr" name="ADR" stroke="#b45309" dot={false} />
+          <Line yAxisId="adr" type="monotone" dataKey="adr" name="ADR ฿"
+            stroke="#C56A45" strokeWidth={2.2}
+            dot={{ fill: '#fff', stroke: '#C56A45', strokeWidth: 2, r: 3 }} />
         </ComposedChart>
       </ResponsiveContainer>
-    </div>
+    </SectionCard>
   );
 }
