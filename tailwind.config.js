@@ -16,6 +16,8 @@ export default {
         ink:       'var(--ink)',
         muted:     'var(--muted)',
         line:      'var(--line)',
+        'accent-soft': 'var(--accent-soft)',
+        'on-accent':   'var(--on-accent)',
       },
       fontFamily: {
         display: ["'Cormorant Garamond'", 'serif'],

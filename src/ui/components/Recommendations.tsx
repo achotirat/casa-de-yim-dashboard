@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import type { Snapshot } from '../../types';
 import { recommend } from '../../recommendations/rules';
 import { buildRecoInputs } from '../buildRecoInputs';
 import { aiInsight } from '../../lib/api';
 
-function highlightNums(text: string): React.ReactNode {
+function highlightNums(text: string): ReactNode {
   return text.split(/(\d[\d,.%฿]*)/).map((part, i) =>
     /\d/.test(part)
       ? <span key={i} style={{ color: 'var(--gold)', fontWeight: 800 }}>{part}</span>
@@ -12,7 +13,7 @@ function highlightNums(text: string): React.ReactNode {
   );
 }
 
-function highlightNumsAccent(text: string): React.ReactNode {
+function highlightNumsAccent(text: string): ReactNode {
   return text.split(/(\d[\d,.%฿]*)/).map((part, i) =>
     /\d/.test(part)
       ? <b key={i} style={{ fontWeight: 700, color: 'var(--accent-2)' }}>{part}</b>
@@ -21,8 +22,8 @@ function highlightNumsAccent(text: string): React.ReactNode {
 }
 
 export default function Recommendations({
-  latest, previous,
-}: { latest: Snapshot; previous: Snapshot | null }) {
+  latest, previous, dataAsOf,
+}: { latest: Snapshot; previous: Snapshot | null; dataAsOf: string }) {
   const [aiText, setAiText] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -30,7 +31,11 @@ export default function Recommendations({
   const recos = inputs.flatMap((i) => recommend(i));
   const topReco = recos[0] ?? null;
 
-  const currentMonth = new Date().toLocaleString('th-TH', { month: 'long' });
+  const MONTH_TH: Record<number, string> = {
+    1:'มกราคม',2:'กุมภาพันธ์',3:'มีนาคม',4:'เมษายน',5:'พฤษภาคม',6:'มิถุนายน',
+    7:'กรกฎาคม',8:'สิงหาคม',9:'กันยายน',10:'ตุลาคม',11:'พฤศจิกายน',12:'ธันวาคม',
+  };
+  const currentMonth = MONTH_TH[Number(dataAsOf.slice(5, 7))] ?? '';
 
   async function askAi() {
     setBusy(true);
@@ -77,7 +82,7 @@ export default function Recommendations({
       </div>
 
       {/* Right: accent-soft */}
-      <div style={{ background: '#F6DCCB', padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ background: 'var(--accent-soft)', padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: 'rgba(58,30,18,.5)' }}>
           สัญญาณที่ตรวจพบ
         </span>
@@ -86,7 +91,7 @@ export default function Recommendations({
           {recos.length === 0 ? (
             <p style={{ color: 'rgba(58,30,18,.5)', fontSize: 13 }}>— ยังไม่มีสัญญาณ</p>
           ) : recos.slice(0, 3).map((r, i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,.65)', borderRadius: 10, padding: '9px 12px', fontSize: 12.5, fontWeight: 500, color: '#3A1E12', display: 'flex', alignItems: 'flex-start', gap: 9, border: '1px solid rgba(58,30,18,.07)', lineHeight: 1.5 }}>
+            <div key={i} style={{ background: 'rgba(255,255,255,.65)', borderRadius: 10, padding: '9px 12px', fontSize: 12.5, fontWeight: 500, color: 'var(--on-accent)', display: 'flex', alignItems: 'flex-start', gap: 9, border: '1px solid rgba(58,30,18,.07)', lineHeight: 1.5 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: r.level === 'green' ? 'var(--primary)' : 'var(--accent)', flexShrink: 0, marginTop: 5 }} />
               <span>{highlightNumsAccent(r.message)}</span>
             </div>
@@ -95,7 +100,7 @@ export default function Recommendations({
 
         <div style={{ marginTop: 'auto', background: '#fff', borderRadius: 12, padding: '8px 8px 8px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
           {aiText ? (
-            <span style={{ flex: 1, fontSize: 12, color: '#3A1E12', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{aiText}</span>
+            <span style={{ flex: 1, fontSize: 12, color: 'var(--on-accent)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{aiText}</span>
           ) : (
             <input placeholder="พิมพ์คำถามถึง Yim AI…" style={{ flex: 1, border: 'none', background: 'transparent', fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 12.5, color: 'var(--ink)', outline: 'none' }} />
           )}

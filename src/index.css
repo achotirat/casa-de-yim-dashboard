@@ -16,6 +16,8 @@
   --ink:     #241D18;
   --muted:   #8C8377;
   --line:    rgba(36,29,24,.10);
+  --accent-soft: #F6DCCB;   /* cream right panel in Recommendations */
+  --on-accent:   #3A1E12;   /* dark brown text on accent-soft */
 }
 
 html { background: var(--sand); }

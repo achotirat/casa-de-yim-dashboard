@@ -1,8 +1,10 @@
+import type { ReactNode, CSSProperties } from 'react';
+
 interface SectionHeadProps {
   title: string;
   italic?: string;
   meta?: string;
-  right?: React.ReactNode;
+  right?: ReactNode;
 }
 
 export function SectionHead({ title, italic, meta, right }: SectionHeadProps) {
@@ -31,8 +33,8 @@ export function SectionHead({ title, italic, meta, right }: SectionHeadProps) {
 
 interface SectionCardProps {
   alt?: boolean;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
+  children: ReactNode;
+  style?: CSSProperties;
 }
 
 export default function SectionCard({ alt, children, style }: SectionCardProps) {

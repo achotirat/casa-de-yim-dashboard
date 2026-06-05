@@ -97,7 +97,7 @@ export default function Dashboard() {
       <ForecastSection yearly={data.latest.yearly} dataAsOf={dataAsOf} />
       {showForwardPace && <ForwardPace latest={data.latest} daysAhead={forwardDays()} />}
       <MixPanels channels={data.latest.channels} countries={data.latest.countries} />
-      <Recommendations latest={data.latest} previous={data.previous} />
+      <Recommendations latest={data.latest} previous={data.previous} dataAsOf={dataAsOf} />
     </div>
   );
 }
