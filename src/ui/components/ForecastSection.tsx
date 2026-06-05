@@ -1,61 +1,61 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer } from 'recharts';
 import type { YearlyReport } from '../../types';
+import SectionCard, { SectionHead } from './SectionCard';
 
-const MONTH_ABBR = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const MONTH_ABBR = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
 function fmt(n: number | null, suffix = '') {
   if (n == null) return '–';
   return n.toLocaleString('en-US', { maximumFractionDigits: suffix === '%' ? 1 : 0 }) + suffix;
 }
 
-export default function ForecastSection({
-  yearly, dataAsOf,
-}: { yearly?: YearlyReport; dataAsOf: string }) {
+const FILL: Record<string, string> = { actual: '#103A34', current: '#C56A45', booked: '#B6C2C6' };
+const LEGEND: [string, string][] = [['#103A34','Actual'],['#C56A45','เดือนปัจจุบัน'],['#B6C2C6','On-the-books']];
+
+export default function ForecastSection({ yearly, dataAsOf }: { yearly?: YearlyReport; dataAsOf: string }) {
   if (!yearly) return null;
 
   const currentMonth = Number(dataAsOf.slice(5, 7));
-
   const rows = yearly.months.map((m) => ({
     name: MONTH_ABBR[m.monthIndex - 1],
     occ: m.occPct ?? 0,
     status: m.monthIndex < currentMonth ? 'actual' : m.monthIndex === currentMonth ? 'current' : 'booked',
   }));
 
-  // Full-year expected: sum actuals + on-the-books
-  const totalNights = yearly.months.reduce((s, m) => s + (m.nightSold ?? 0), 0);
-  const totalRooms = yearly.months.reduce((s, m) => s + (m.availableRooms ?? 0), 0);
+  const totalNights  = yearly.months.reduce((s, m) => s + (m.nightSold ?? 0), 0);
+  const totalRooms   = yearly.months.reduce((s, m) => s + (m.availableRooms ?? 0), 0);
   const totalRevenue = yearly.months.reduce((s, m) => s + (m.roomCharges ?? 0), 0);
-  const expectedOcc = totalRooms > 0 ? (totalNights / totalRooms) * 100 : null;
-  const expectedADR = totalNights > 0 ? totalRevenue / totalNights : null;
+  const expectedOcc  = totalRooms > 0 ? (totalNights / totalRooms) * 100 : null;
+  const expectedADR  = totalNights > 0 ? totalRevenue / totalNights : null;
 
-  const FILL: Record<string, string> = { actual: '#1e293b', current: '#3a6ea5', booked: '#94a3b8' };
+  const stats = [
+    { label: 'Occ% คาด (ทั้งปี)', value: fmt(expectedOcc, '%') },
+    { label: 'ADR คาด (ทั้งปี)',   value: '฿' + fmt(expectedADR) },
+    { label: 'Revenue คาด (ทั้งปี)', value: '฿' + fmt(totalRevenue > 0 ? totalRevenue : null) },
+  ];
 
   return (
-    <div className="bg-white rounded-xl p-5 shadow space-y-4">
-      <div>
-        <h3 className="text-sm font-semibold text-slate-700">คาดการณ์ทั้งปี {yearly.year}</h3>
-        <p className="text-xs text-slate-400 mt-0.5">
-          actual (ม.ค.–เดือนก่อน) + on-the-books (เดือนนี้–ธ.ค.) จาก eZee · ข้อมูล ณ {dataAsOf}
-        </p>
-      </div>
+    <SectionCard alt>
+      <SectionHead
+        title="คาดการณ์"
+        italic={` ทั้งปี ${yearly.year}`}
+        meta={`actual + on-the-books · จาก eZee · ข้อมูล ณ ${dataAsOf}`}
+      />
 
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Occ% คาด (ทั้งปี)', value: fmt(expectedOcc, '%') },
-          { label: 'ADR คาด (ทั้งปี)', value: '฿' + fmt(expectedADR) },
-          { label: 'Revenue คาด (ทั้งปี)', value: '฿' + fmt(totalRevenue > 0 ? totalRevenue : null) },
-        ].map((c) => (
-          <div key={c.label} className="bg-slate-50 rounded-lg p-3">
-            <div className="text-xs text-slate-400">{c.label}</div>
-            <div className="text-xl font-bold text-slate-800">{c.value}</div>
+      {/* Stat strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+        {stats.map((s) => (
+          <div key={s.label} style={{ background: 'var(--card)', borderRadius: 16, padding: '14px 16px', border: '1px solid var(--line)' }}>
+            <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '1.4px' }}>{s.label}</div>
+            <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: 30, lineHeight: 1, letterSpacing: '-1px', color: 'var(--ink)', marginTop: 6 }}>{s.value}</div>
           </div>
         ))}
       </div>
 
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={rows} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-          <XAxis dataKey="name" fontSize={10} />
-          <YAxis fontSize={10} unit="%" domain={[0, 100]} width={36} />
+          <XAxis dataKey="name" fontSize={11} fontFamily="'Manrope', sans-serif" tick={{ fill: 'var(--muted)' }} />
+          <YAxis fontSize={11} fontFamily="'Manrope', sans-serif" tick={{ fill: 'var(--muted)' }} unit="%" domain={[0, 100]} width={36} />
           <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, 'Occ%']} />
           <Bar dataKey="occ" name="Occ%">
             {rows.map((r, i) => <Cell key={i} fill={FILL[r.status]} />)}
@@ -63,11 +63,14 @@ export default function ForecastSection({
         </BarChart>
       </ResponsiveContainer>
 
-      <div className="flex gap-4 text-xs text-slate-500">
-        <span><span className="inline-block w-2.5 h-2.5 bg-slate-800 rounded-sm mr-1" />Actual</span>
-        <span><span className="inline-block w-2.5 h-2.5 bg-blue-500 rounded-sm mr-1" />เดือนปัจจุบัน</span>
-        <span><span className="inline-block w-2.5 h-2.5 bg-slate-300 rounded-sm mr-1" />On-the-books (จะเพิ่มขึ้นเรื่อยๆ)</span>
+      <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
+        {LEGEND.map(([col, label]) => (
+          <span key={label} style={{ fontFamily: "'Manrope', sans-serif", fontSize: 11.5, color: 'var(--muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 3, background: col }} />
+            {label}
+          </span>
+        ))}
       </div>
-    </div>
+    </SectionCard>
   );
 }
