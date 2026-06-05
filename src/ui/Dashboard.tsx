@@ -54,9 +54,39 @@ export default function Dashboard() {
 
   const showForwardPace = period !== 'lastWeek';
 
+  const MONTH_TH: Record<number, string> = {
+    1:'มกราคม',2:'กุมภาพันธ์',3:'มีนาคม',4:'เมษายน',5:'พฤษภาคม',6:'มิถุนายน',
+    7:'กรกฎาคม',8:'สิงหาคม',9:'กันยายน',10:'ตุลาคม',11:'พฤศจิกายน',12:'ธันวาคม',
+  };
+  const currentMonthNum = Number(dataAsOf.slice(5, 7));
+  const monthLabel = MONTH_TH[currentMonthNum] ?? '';
+
+  const PERIOD_DESC: Record<Period, string> = {
+    thisMonth: 'เดือนนี้',
+    next2Weeks: '2 สัปดาห์หน้า',
+    nextMonth: 'เดือนหน้า',
+    lastMonth: 'เดือนที่ผ่านมา',
+    lastWeek: 'สัปดาห์ที่ผ่านมา',
+  };
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <PeriodToggle value={period} onChange={setPeriod} hasWeeklyData={hasWeeklyData} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Page head */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, padding: '2px 4px 4px' }}>
+        <div>
+          <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>
+            {monthLabel} {dataAsOf.slice(0, 4)} · ข้อมูล ณ {dataAsOf}
+          </div>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 36, lineHeight: 1.05, letterSpacing: '-.5px', color: 'var(--ink)', margin: 0 }}>
+            ผลประกอบการ<i style={{ fontStyle: 'italic', color: 'var(--accent-2)' }}> {PERIOD_DESC[period]}</i>
+          </h1>
+          <div style={{ fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 13, color: 'var(--muted)', fontWeight: 500, marginTop: 4 }}>
+            ดู Occupancy, ADR และ RevPAR เทียบเดือนก่อน · เลือกช่วงเวลาเพื่อโฟกัส
+          </div>
+        </div>
+        <PeriodToggle value={period} onChange={setPeriod} hasWeeklyData={hasWeeklyData} />
+      </div>
+
       <KpiCards
         yearly={data.latest.yearly}
         monthIndex={monthIndex}

@@ -5,18 +5,71 @@ import Dashboard from './Dashboard';
 
 export default function App() {
   const [tab, setTab] = useState<'dashboard' | 'upload'>('dashboard');
+
   return (
     <AuthGate>
-      <div className="min-h-screen bg-slate-100">
-        <header className="bg-white border-b px-6 py-3 flex items-center gap-4">
-          <h1 className="font-bold text-slate-800">Casa de Yim</h1>
-          <nav className="flex gap-2 text-sm">
-            <button onClick={() => setTab('dashboard')} className={tab === 'dashboard' ? 'font-semibold text-slate-900' : 'text-slate-500'}>Dashboard</button>
-            <button onClick={() => setTab('upload')} className={tab === 'upload' ? 'font-semibold text-slate-900' : 'text-slate-500'}>อัปโหลด</button>
+      <div style={{ minHeight: '100vh', background: 'var(--sand)' }}>
+        {/* Dark header bar */}
+        <header style={{
+          background: 'linear-gradient(150deg, var(--shell-1), var(--shell-2))',
+          padding: '0 24px',
+          height: 60,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 20,
+        }}>
+          {/* Brandmark */}
+          <div style={{
+            width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+            background: 'linear-gradient(140deg, var(--accent), var(--accent-2))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: 22,
+            fontFamily: "'Cormorant Garamond', serif", fontWeight: 700,
+            boxShadow: '0 6px 16px -8px rgba(0,0,0,.5)',
+          }}>Y</div>
+          {/* Wordmark */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <span style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 20, color: '#fff', lineHeight: 1 }}>
+              Casa de Yim
+            </span>
+            <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,.5)' }}>
+              Krabi · Dashboard
+            </span>
+          </div>
+          {/* Tab nav */}
+          <nav style={{ display: 'flex', gap: 20, marginLeft: 20 }}>
+            {(['dashboard', 'upload'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  padding: '4px 0',
+                  fontFamily: "'Manrope', sans-serif", fontSize: 11, fontWeight: 700,
+                  letterSpacing: '1.2px', textTransform: 'uppercase',
+                  color: tab === t ? '#fff' : 'rgba(255,255,255,.45)',
+                  borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
+                  transition: 'color .15s',
+                }}
+              >
+                {t === 'dashboard' ? 'Dashboard' : 'อัปโหลด'}
+              </button>
+            ))}
           </nav>
         </header>
-        <main className="p-6">
-          {tab === 'dashboard' ? <Dashboard /> : <UploadPage onSaved={() => setTab('dashboard')} />}
+
+        {/* Content panel */}
+        <main style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{
+            background: 'var(--panel)',
+            borderRadius: 28,
+            padding: '24px 28px 32px',
+            minHeight: 'calc(100vh - 92px)',
+          }}>
+            {tab === 'dashboard'
+              ? <Dashboard />
+              : <UploadPage onSaved={() => setTab('dashboard')} />}
+          </div>
         </main>
       </div>
     </AuthGate>
