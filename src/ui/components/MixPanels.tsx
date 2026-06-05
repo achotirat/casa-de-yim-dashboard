@@ -1,47 +1,95 @@
 import type { ChannelReport, CountryReport } from '../../types';
+import SectionCard, { SectionHead } from './SectionCard';
 
-function bar(value: number, max: number): string {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  return `${pct}%`;
+function barPct(value: number, max: number): string {
+  return max > 0 ? `${Math.round((value / max) * 100)}%` : '0%';
 }
+
+const CHAN_COLORS = ['#103A34', '#C56A45', '#1E6E62', '#5481A6'];
+const CHAN_GRAD_END = ['#1E6E62', '#E2A95B', '#2E8576', '#7AAEC8'];
 
 export default function MixPanels({
   channels, countries,
 }: { channels?: ChannelReport; countries?: CountryReport }) {
   const chanRows = (channels?.rows ?? []).filter((r) => (r.roomSold ?? 0) > 0);
   const maxChan = Math.max(1, ...chanRows.map((r) => r.revenue ?? 0));
+
   const countryRows = (countries?.rows ?? [])
     .filter((r) => r.country !== '-- N/A --')
     .slice(0, 8);
   const maxCountry = Math.max(1, ...countryRows.map((r) => r.revenue ?? 0));
+  const totalRev = countryRows.reduce((s, r) => s + (r.revenue ?? 0), 0);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="bg-white rounded-xl p-5 shadow">
-        <h3 className="text-sm font-semibold text-slate-700 mb-3">สัดส่วนช่องทาง</h3>
-        {chanRows.length === 0 ? <p className="text-slate-400 text-sm">— ไม่มีข้อมูล</p> : chanRows.map((r) => (
-          <div key={r.source} className="mb-2">
-            <div className="flex justify-between text-sm">
-              <span>{r.source}</span>
-              <span className="text-slate-500">{r.revPct?.toFixed(0) ?? '–'}% · ADR ฿{r.adr?.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '–'}</span>
-            </div>
-            <div className="h-2 bg-slate-100 rounded"><div className="h-2 bg-slate-700 rounded" style={{ width: bar(r.revenue ?? 0, maxChan) }} /></div>
-          </div>
-        ))}
-      </div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.05fr', gap: 16 }}>
 
-      <div className="bg-white rounded-xl p-5 shadow">
-        <h3 className="text-sm font-semibold text-slate-700 mb-3">ตลาดตามสัญชาติ (Top 8)</h3>
-        {countryRows.length === 0 ? <p className="text-slate-400 text-sm">— ไม่มีข้อมูล</p> : countryRows.map((r) => (
-          <div key={r.country} className="mb-2">
-            <div className="flex justify-between text-sm">
-              <span>{r.country}</span>
-              <span className="text-slate-500">฿{r.revenue?.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '–'}</span>
+      {/* Channels */}
+      <SectionCard>
+        <SectionHead title="สัดส่วน" italic=" ช่องทาง" meta={`${chanRows.length} ช่องทางหลัก`} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {chanRows.length === 0 ? (
+            <p style={{ color: 'var(--muted)', fontSize: 14 }}>— ไม่มีข้อมูล</p>
+          ) : chanRows.map((r, idx) => {
+            const color = CHAN_COLORS[idx % CHAN_COLORS.length];
+            const gradEnd = CHAN_GRAD_END[idx % CHAN_GRAD_END.length];
+            const initials = r.source.slice(0, 2).toUpperCase();
+            return (
+              <div key={r.source} style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ width: 30, height: 30, borderRadius: 9, background: color, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: 13, flexShrink: 0 }}>
+                      {initials}
+                    </span>
+                    <span style={{ fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{r.source}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: "'Manrope', sans-serif" }}>
+                    <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{r.revPct?.toFixed(0) ?? '–'}%</span>
+                    <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
+                      ADR <b style={{ color: 'var(--ink)', fontWeight: 700 }}>฿{r.adr?.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '–'}</b>
+                    </span>
+                  </div>
+                </div>
+                <div style={{ height: 10, borderRadius: 6, background: 'var(--card-2)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', borderRadius: 6, width: barPct(r.revenue ?? 0, maxChan), background: `linear-gradient(90deg, ${color}, ${gradEnd})` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </SectionCard>
+
+      {/* Countries */}
+      <SectionCard>
+        <SectionHead
+          title="ตลาดตามสัญชาติ "
+          italic="(Top 8)"
+          meta="เรียงตาม revenue"
+          right={totalRev > 0
+            ? <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 11.5, color: 'var(--muted)', fontWeight: 600 }}>
+                รวม <b style={{ color: 'var(--ink)', fontWeight: 700 }}>฿{totalRev.toLocaleString('en-US', { maximumFractionDigits: 0 })}</b>
+              </span>
+            : undefined}
+        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {countryRows.length === 0 ? (
+            <p style={{ color: 'var(--muted)', fontSize: 14 }}>— ไม่มีข้อมูล</p>
+          ) : countryRows.map((r) => (
+            <div key={r.country} style={{ display: 'grid', gridTemplateColumns: '1fr 90px', alignItems: 'center', gap: 12, padding: '5px 0' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+                <span style={{ fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 13, fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.country}</span>
+                <div style={{ height: 6, borderRadius: 4, background: 'var(--card-2)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', borderRadius: 4, width: barPct(r.revenue ?? 0, maxCountry), background: 'linear-gradient(90deg, #103A34, #1E6E62)' }} />
+                </div>
+              </div>
+              <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: 13, color: 'var(--ink)', textAlign: 'right', letterSpacing: '-.3px' }}>
+                <span style={{ color: 'var(--muted)', fontWeight: 600 }}>฿</span>
+                {r.revenue?.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '–'}
+              </div>
             </div>
-            <div className="h-2 bg-slate-100 rounded"><div className="h-2 bg-blue-500 rounded" style={{ width: bar(r.revenue ?? 0, maxCountry) }} /></div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </SectionCard>
+
     </div>
   );
 }
