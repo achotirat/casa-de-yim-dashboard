@@ -3,9 +3,9 @@
 เว็บแอปดูสถานะ Occupancy/ADR/RevPAR ของ Casa de Yim Pool Villa (กระบี่)  
 Upload รายงาน eZee รายวัน → dashboard แสดง KPI, booking pace, และคำแนะนำการปรับราคา (กฎ + AI)
 
-## SOP — Export eZee รายวัน
+## Auto-Export — eZee รายวัน
 
-แนะนำดึงทุกวันเวลา 6 โมงเช้า
+`scripts/ezee-export.ts` ล็อกอิน eZee, export รายงาน, และอัปโหลดไปที่ dashboard อัตโนมัติทุกวันเวลา 05:00 น. (ติดตั้งผ่าน `scripts/setup-cron.sh`, ดู `crontab -l`)
 
 | # | รายงาน | Date From → To | หมายเหตุ |
 |---|--------|----------------|---------|
@@ -17,7 +17,7 @@ Upload รายงาน eZee รายวัน → dashboard แสดง KPI
 | 4b | Country Wise | เดือนที่ผ่านมา | ทุกวัน |
 | 5 | Arrival List | วันนี้ → +2 เดือน | ทุกวัน |
 
-Export เป็น HTML แล้วอัปโหลดในหน้า "อัปโหลด" ของ dashboard
+ถ้าต้อง export ด้วยมือ (เช่น auto-export ล่ม): export เป็น HTML แล้วอัปโหลดในหน้า "อัปโหลด" ของ dashboard
 
 ## การ Deploy บน Netlify
 
