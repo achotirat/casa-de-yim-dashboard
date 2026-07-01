@@ -1,21 +1,21 @@
 # Casa de Yim Revenue Dashboard
 
 เว็บแอปดูสถานะ Occupancy/ADR/RevPAR ของ Casa de Yim Pool Villa (กระบี่)  
-Upload รายงาน eZee รายสัปดาห์ → dashboard แสดง KPI, booking pace, และคำแนะนำการปรับราคา (กฎ + AI)
+Upload รายงาน eZee รายวัน → dashboard แสดง KPI, booking pace, และคำแนะนำการปรับราคา (กฎ + AI)
 
-## SOP — Export eZee รายสัปดาห์
+## SOP — Export eZee รายวัน
 
-แนะนำดึงทุกวันศุกร์ หรือวันเดิมของสัปดาห์
+แนะนำดึงทุกวันเวลา 6 โมงเช้า
 
 | # | รายงาน | Date From → To | หมายเหตุ |
 |---|--------|----------------|---------|
-| 1 | Yearly Statistics | Year = ปีปัจจุบัน (2026) | ทุกสัปดาห์ |
+| 1 | Yearly Statistics | Year = ปีปัจจุบัน (2026) | ทุกวัน |
 | 2 | Yearly Statistics | Year = ปีก่อน (2025) | ครั้งเดียว (baseline YoY) |
-| 3 | Contribution Analysis | 1/1/ปีปัจจุบัน → วันนี้ | ทุกสัปดาห์ |
-| 3b | Contribution Analysis | เดือนที่ผ่านมา (1–สิ้นเดือน) | ทุกสัปดาห์ |
-| 4 | Country Wise | 1/1/ปีปัจจุบัน → วันนี้ | ทุกสัปดาห์ |
-| 4b | Country Wise | เดือนที่ผ่านมา | ทุกสัปดาห์ |
-| 5 | Arrival List | วันนี้ → +2 เดือน | ทุกสัปดาห์ |
+| 3 | Contribution Analysis | 1/1/ปีปัจจุบัน → วันนี้ | ทุกวัน |
+| 3b | Contribution Analysis | เดือนที่ผ่านมา (1–สิ้นเดือน) | ทุกวัน |
+| 4 | Country Wise | 1/1/ปีปัจจุบัน → วันนี้ | ทุกวัน |
+| 4b | Country Wise | เดือนที่ผ่านมา | ทุกวัน |
+| 5 | Arrival List | วันนี้ → +2 เดือน | ทุกวัน |
 
 Export เป็น HTML แล้วอัปโหลดในหน้า "อัปโหลด" ของ dashboard
 
