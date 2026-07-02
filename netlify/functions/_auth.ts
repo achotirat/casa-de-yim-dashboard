@@ -1,5 +1,24 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+export type Role = 'owner' | 'housekeeper';
+
+export type Permission =
+  | 'read:revenue'
+  | 'read:arrivals'
+  | 'write:snapshot'
+  | 'read:snapshot-keys';
+
+const ROLE_PERMISSIONS: Record<Role, Set<Permission>> = {
+  owner: new Set(['read:revenue', 'read:arrivals', 'write:snapshot', 'read:snapshot-keys']),
+  housekeeper: new Set(['read:arrivals']),
+};
+
+const ROLES: Role[] = ['owner', 'housekeeper'];
+
+function isRole(payload: string): payload is Role {
+  return (ROLES as string[]).includes(payload);
+}
+
 export function signToken(payload: string, secret: string): string {
   const sig = createHmac('sha256', secret).update(payload).digest('hex');
   return `${payload}.${sig}`;
@@ -35,4 +54,21 @@ export function tokenFromCookieHeader(header: string | undefined): string | unde
 
 export function isAuthed(req: Request, secret: string): boolean {
   return verifyToken(tokenFromCookieHeader(req.headers.get('cookie') || undefined), secret);
+}
+
+export function roleFromCookie(req: Request, secret: string): Role | null {
+  const token = tokenFromCookieHeader(req.headers.get('cookie') || undefined);
+  if (!token || !verifyToken(token, secret)) return null;
+  const idx = token.lastIndexOf('.');
+  const payload = token.slice(0, idx);
+  return isRole(payload) ? payload : null;
+}
+
+export function hasPermission(role: Role | null, perm: Permission): boolean {
+  if (!role) return false;
+  return ROLE_PERMISSIONS[role].has(perm);
+}
+
+export function clearedCookie(): string {
+  return `${COOKIE}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`;
 }
