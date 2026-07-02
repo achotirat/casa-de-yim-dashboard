@@ -39,4 +39,15 @@ describe('parseArrivals', () => {
     expect(r.data.rows.some((x) => x.resNo === '68')).toBe(true);
     expect(r.data.rows.some((x) => x.resNo === '481')).toBe(true);
   });
+
+  it('parses children count alongside adults', () => {
+    const r = parseArrivals(html);
+    if (!r.ok) throw new Error(r.reason);
+    const withChild = r.data.rows.find((x) => x.resNo === '472')!;
+    expect(withChild.pax).toBe(2);
+    expect(withChild.children).toBe(2);
+    const noChild = r.data.rows.find((x) => x.resNo === '301')!;
+    expect(noChild.pax).toBe(10);
+    expect(noChild.children).toBe(0);
+  });
 });

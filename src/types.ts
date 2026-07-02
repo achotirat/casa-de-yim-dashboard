@@ -65,6 +65,7 @@ export interface ArrivalRow {
   arrival: string | null;   // ISO date (check-in)
   departure: string | null; // ISO date
   pax: number | null;
+  children: number | null;
   resType: string;
   channel: string;          // Company column (e.g. "OTA")
   notes: string;
