@@ -2,6 +2,7 @@ import type { Config } from '@netlify/functions';
 import { roleFromCookie } from './_auth';
 
 export default async function handler(req: Request): Promise<Response> {
+  if (req.method !== 'GET') return new Response('Method Not Allowed', { status: 405 });
   const secret = process.env.AUTH_SECRET || '';
   const role = roleFromCookie(req, secret);
   if (!role) {

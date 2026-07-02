@@ -6,7 +6,9 @@ import SectionCard, { SectionHead } from './SectionCard';
 function isoDate(offsetDays: number): string {
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
+  // Use local calendar date (not toISOString, which converts to UTC and can
+  // shift the date backward in timezones ahead of UTC, e.g. Asia/Bangkok).
+  return new Intl.DateTimeFormat('en-CA').format(d);
 }
 
 function guestCountLabel(a: HousekeepingArrival): string {
@@ -61,7 +63,7 @@ function DaySection({ label, rows }: { label: string; rows: HousekeepingArrival[
       />
       {rows.length === 0 ? (
         <p style={{ color: 'var(--muted)', fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif" }}>
-          ไม่มีแขกเข้าพัก{label === 'วันนี้' ? 'วันนี้' : 'พรุ่งนี้'}
+          ไม่มีแขกเข้าพัก{label}
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
