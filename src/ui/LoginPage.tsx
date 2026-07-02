@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { login } from '../lib/api';
+import { login, type Role } from '../lib/api';
 
-export default function LoginPage({ onSuccess }: { onSuccess: () => void }) {
+export default function LoginPage({ onSuccess }: { onSuccess: (role: Role) => void }) {
   const [pw, setPw] = useState('');
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -10,9 +10,9 @@ export default function LoginPage({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     setBusy(true);
     setError(false);
-    const ok = await login(pw);
+    const result = await login(pw);
     setBusy(false);
-    if (ok) onSuccess();
+    if (result.ok && result.role) onSuccess(result.role);
     else setError(true);
   }
 

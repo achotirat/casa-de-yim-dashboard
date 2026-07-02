@@ -1,24 +1,15 @@
 import { useEffect, useState } from 'react';
-import { listSnapshotKeys } from '../lib/api';
+import { whoami, type Role } from '../lib/api';
 import LoginPage from './LoginPage';
 
-export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<'checking' | 'in' | 'out'>('checking');
-
-  async function check() {
-    try {
-      await listSnapshotKeys();
-      setState('in');
-    } catch (_e) {
-      setState('out');
-    }
-  }
+export default function AuthGate({ children }: { children: (role: Role) => React.ReactNode }) {
+  const [role, setRole] = useState<Role | null | 'checking'>('checking');
 
   useEffect(() => {
-    check();
+    whoami().then(setRole);
   }, []);
 
-  if (state === 'checking') return <div className="p-8 text-slate-500">กำลังโหลด…</div>;
-  if (state === 'out') return <LoginPage onSuccess={() => setState('in')} />;
-  return <>{children}</>;
+  if (role === 'checking') return <div className="p-8 text-slate-500">กำลังโหลด…</div>;
+  if (role === null) return <LoginPage onSuccess={setRole} />;
+  return <>{children(role)}</>;
 }

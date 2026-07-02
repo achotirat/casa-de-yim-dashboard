@@ -7,6 +7,7 @@ import type { ArrivalsReport, ArrivalRow, ParseResult } from '../types';
 // [0]resNo  [1]guest  [2]''  [3]room  [4]rate  [5]''  [6]arrival  [7]departure
 // [8]pax  [9-12]''  [13]resType  [14]''  [15]channel
 function toArrivalRow(c: string[]): ArrivalRow {
+  const { adults, children } = parsePax(c[8]);
   return {
     resNo: c[0] ?? '',
     guest: c[1] ?? '',
@@ -14,7 +15,8 @@ function toArrivalRow(c: string[]): ArrivalRow {
     rate: parseNum(c[4]),
     arrival: parseDate(c[6]),
     departure: parseDate(c[7]),
-    pax: parsePax(c[8]).adults,
+    pax: adults,
+    children,
     resType: c[13] ?? '',
     channel: c[15] ?? '',
     notes: '',

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import PeriodToggle from './components/PeriodToggle';
 import KpiCards from './components/KpiCards';
 import TrendChart from './components/TrendChart';
@@ -6,20 +6,14 @@ import ForwardPace from './components/ForwardPace';
 import MixPanels from './components/MixPanels';
 import Recommendations from './components/Recommendations';
 import ForecastSection from './components/ForecastSection';
-import { loadSnapshots, targetMonthForPeriod, type Period, type LoadedSnapshots } from './dashboardData';
+import { targetMonthForPeriod, type Period, type LoadedSnapshots } from './dashboardData';
 import { villaCount } from '../metrics/capacity';
 import { dailyOccupancy } from '../metrics/pace';
 import { weeklyKpi, type WeeklyKpi } from '../metrics/weekly';
 
-export default function Dashboard() {
-  const [data, setData] = useState<LoadedSnapshots | null>(null);
+export default function Dashboard({ data }: { data: LoadedSnapshots }) {
   const [period, setPeriod] = useState<Period>('thisMonth');
 
-  useEffect(() => {
-    loadSnapshots().then(setData);
-  }, []);
-
-  if (!data) return <div className="text-slate-500">กำลังโหลด…</div>;
   if (!data.latest) return <div className="text-slate-500">ยังไม่มีข้อมูล — ไปที่หน้า "อัปโหลด" ก่อน</div>;
 
   const dataAsOf = data.latest.dataAsOf ?? new Date().toISOString().slice(0, 10);

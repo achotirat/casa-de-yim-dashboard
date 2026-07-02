@@ -25,8 +25,8 @@ describe('dailyOccupancy', () => {
     const arrivals: ArrivalsReport = {
       periodFrom: '2026-06-01', periodTo: '2026-06-30',
       rows: [
-        { resNo: '1', guest: 'A', room: 'A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-03', pax: 2, resType: '', channel: '', notes: '' },
-        { resNo: '2', guest: 'B', room: 'A2', rate: 1, arrival: '2026-06-02', departure: '2026-06-03', pax: 2, resType: '', channel: '', notes: '' },
+        { resNo: '1', guest: 'A', room: 'A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-03', pax: 2, children: null, resType: '', channel: '', notes: '' },
+        { resNo: '2', guest: 'B', room: 'A2', rate: 1, arrival: '2026-06-02', departure: '2026-06-03', pax: 2, children: null, resType: '', channel: '', notes: '' },
       ],
     };
     const days = dailyOccupancy(arrivals, 4, '2026-06-01', 3);
