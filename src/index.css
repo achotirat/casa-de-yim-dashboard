@@ -59,6 +59,9 @@ body {
   /* Recommendations: single column */
   .cdy-rec-grid      { grid-template-columns: 1fr !important; }
 
+  /* Housekeeping arrival stat grid: 2x2 instead of 4-across */
+  .cdy-hk-stat-grid  { grid-template-columns: repeat(2, 1fr) !important; row-gap: 10px !important; }
+
   /* PeriodToggle chips: horizontal scroll */
   .cdy-chips         { flex-wrap: nowrap !important; overflow-x: auto !important; padding-bottom: 4px; padding-right: 16px; -webkit-overflow-scrolling: touch; }
   .cdy-chips::-webkit-scrollbar { display: none; }

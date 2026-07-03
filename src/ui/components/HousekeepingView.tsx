@@ -18,15 +18,42 @@ function guestCountLabel(a: HousekeepingArrival): string {
   return parts.length > 0 ? parts.join(' ') : '-';
 }
 
+function formatShortDate(dateISO: string | null): string {
+  if (!dateISO) return '-';
+  const [y, m, d] = dateISO.split('-');
+  return `${d}/${m}/${y.slice(2)}`;
+}
+
+function nightsLabel(nights: number | null): string {
+  return nights != null ? `${nights} คืน` : '-';
+}
+
 function copyText(label: string, rows: HousekeepingArrival[]): string {
   if (rows.length === 0) return `${label} — ไม่มีแขกเข้าพัก`;
   return rows
     .map((r) => {
-      const lines = [`🏡 ${r.room}`, `แขก: ${r.guest} (${guestCountLabel(r)})`];
+      const lines = [
+        `🏡 ${r.room}`,
+        `แขก: ${r.guest} (${guestCountLabel(r)})`,
+        `เช็คอิน: ${formatShortDate(r.arrivalDate)} · เช็คเอาท์: ${formatShortDate(r.departureDate)} · ${nightsLabel(r.nights)}`,
+      ];
       if (r.notes) lines.push(`หมายเหตุ: ${r.notes}`);
       return lines.join('\n');
     })
     .join('\n\n');
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
+        {label}
+      </span>
+      <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>
+        {value}
+      </span>
+    </div>
+  );
 }
 
 function DaySection({ label, rows }: { label: string; rows: HousekeepingArrival[] }) {
@@ -71,10 +98,19 @@ function DaySection({ label, rows }: { label: string; rows: HousekeepingArrival[
             <div key={i} style={{ padding: '12px 16px', background: 'var(--card-2)', borderRadius: 14 }}>
               <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 18, color: 'var(--ink)' }}>{r.room}</div>
               <div style={{ fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 13, color: 'var(--ink)', marginTop: 4 }}>
-                แขก: {r.guest} ({guestCountLabel(r)})
+                แขก: {r.guest}
+              </div>
+              <div className="cdy-hk-stat-grid" style={{
+                display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12,
+                marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line)',
+              }}>
+                <Stat label="เช็คอิน" value={formatShortDate(r.arrivalDate)} />
+                <Stat label="เช็คเอาท์" value={formatShortDate(r.departureDate)} />
+                <Stat label="จำนวนคืน" value={nightsLabel(r.nights)} />
+                <Stat label="จำนวนแขก" value={guestCountLabel(r)} />
               </div>
               {r.notes && (
-                <div style={{ fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                <div style={{ fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
                   หมายเหตุ: {r.notes}
                 </div>
               )}
