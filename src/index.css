@@ -62,6 +62,9 @@ body {
   /* Housekeeping arrival stat grid: 2x2 instead of 4-across */
   .cdy-hk-stat-grid  { grid-template-columns: repeat(2, 1fr) !important; row-gap: 10px !important; }
 
+  /* Housekeeping departure row: stack turnover badge below room/guest instead of squeezing beside it */
+  .cdy-hk-departure-row { flex-direction: column !important; align-items: flex-start !important; }
+
   /* PeriodToggle chips: horizontal scroll */
   .cdy-chips         { flex-wrap: nowrap !important; overflow-x: auto !important; padding-bottom: 4px; padding-right: 16px; -webkit-overflow-scrolling: touch; }
   .cdy-chips::-webkit-scrollbar { display: none; }

@@ -37,3 +37,30 @@ export function arrivalsForDate(
     }))
     .sort((a, b) => a.room.localeCompare(b.room));
 }
+
+export interface HousekeepingDeparture {
+  room: string;
+  guest: string;
+  departureDate: string; // ISO
+  sameDayTurnover: boolean; // a new confirmed guest arrives in the same room on this date
+}
+
+export function departuresForDate(
+  arrivals: ArrivalsReport | undefined,
+  dateISO: string
+): HousekeepingDeparture[] {
+  const rows = arrivals?.rows ?? [];
+  const confirmed = rows.filter((r) => r.resType === 'Confirm Booking');
+  const arrivingRoomsToday = new Set(
+    confirmed.filter((r) => r.arrival === dateISO).map((r) => r.room)
+  );
+  return confirmed
+    .filter((r) => r.departure === dateISO)
+    .map((r) => ({
+      room: r.room,
+      guest: r.guest,
+      departureDate: r.departure as string,
+      sameDayTurnover: arrivingRoomsToday.has(r.room),
+    }))
+    .sort((a, b) => a.room.localeCompare(b.room));
+}
