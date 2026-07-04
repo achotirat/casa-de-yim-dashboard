@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { arrivalsForDate } from '../../src/metrics/housekeeping';
+import { arrivalsForDate, departuresForDate } from '../../src/metrics/housekeeping';
 import type { ArrivalsReport } from '../../src/types';
 
 function report(rows: ArrivalsReport['rows']): ArrivalsReport {
@@ -66,5 +66,68 @@ describe('arrivalsForDate', () => {
       { resNo: '1', guest: 'A', room: 'A1', rate: 1, arrival: '2026-06-05', departure: '2026-06-07', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
     ]);
     expect(arrivalsForDate(arrivals, '2026-06-01')).toEqual([]);
+  });
+});
+
+describe('departuresForDate', () => {
+  it('returns only rows departing on the given date', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'A', room: 'A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-03', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+      { resNo: '2', guest: 'B', room: 'A2', rate: 1, arrival: '2026-06-02', departure: '2026-06-04', pax: 3, children: 1, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    const result = departuresForDate(arrivals, '2026-06-03');
+    expect(result).toEqual([
+      { room: 'A1', guest: 'A', departureDate: '2026-06-03', sameDayTurnover: false },
+    ]);
+  });
+
+  it('excludes rows that are not Confirm Booking', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'A', room: 'A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-03', pax: 2, children: 0, resType: 'Tentative', channel: 'OTA', notes: '' },
+      { resNo: '2', guest: 'B', room: 'A2', rate: 1, arrival: '2026-06-01', departure: '2026-06-03', pax: 3, children: 1, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    const result = departuresForDate(arrivals, '2026-06-03');
+    expect(result).toHaveLength(1);
+    expect(result[0].guest).toBe('B');
+  });
+
+  it('flags sameDayTurnover when a new confirmed guest arrives in the same room that day', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'Outgoing', room: 'A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-03', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+      { resNo: '2', guest: 'Incoming', room: 'A1', rate: 1, arrival: '2026-06-03', departure: '2026-06-05', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    const result = departuresForDate(arrivals, '2026-06-03');
+    expect(result).toEqual([
+      { room: 'A1', guest: 'Outgoing', departureDate: '2026-06-03', sameDayTurnover: true },
+    ]);
+  });
+
+  it('does not flag sameDayTurnover when the new arrival in that room is not Confirm Booking', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'Outgoing', room: 'A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-03', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+      { resNo: '2', guest: 'Tentative Guest', room: 'A1', rate: 1, arrival: '2026-06-03', departure: '2026-06-05', pax: 2, children: 0, resType: 'Tentative', channel: 'OTA', notes: '' },
+    ]);
+    const result = departuresForDate(arrivals, '2026-06-03');
+    expect(result[0].sameDayTurnover).toBe(false);
+  });
+
+  it('sorts results by room', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'Z', room: 'A4 - Villa A4', rate: 1, arrival: '2026-06-01', departure: '2026-06-03', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+      { resNo: '2', guest: 'Y', room: 'A1 - Villa A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-03', pax: 3, children: 1, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    const result = departuresForDate(arrivals, '2026-06-03');
+    expect(result.map((r) => r.room)).toEqual(['A1 - Villa A1', 'A4 - Villa A4']);
+  });
+
+  it('returns an empty array when arrivals is undefined', () => {
+    expect(departuresForDate(undefined, '2026-06-01')).toEqual([]);
+  });
+
+  it('returns an empty array when no rows depart on the given date', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'A', room: 'A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-07', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    expect(departuresForDate(arrivals, '2026-06-03')).toEqual([]);
   });
 });
