@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import type { ArrivalsReport } from '../../types';
-import { arrivalsForDate, departuresForDate, type HousekeepingArrival, type HousekeepingDeparture } from '../../metrics/housekeeping';
+import {
+  arrivalsForDate, departuresForDate, villaStatusesForDate,
+  type HousekeepingArrival, type HousekeepingDeparture, type VillaStatus, type VillaStatusRow,
+} from '../../metrics/housekeeping';
 import SectionCard, { SectionHead } from './SectionCard';
 
 function isoDate(offsetDays: number): string {
@@ -26,6 +29,27 @@ function formatShortDate(dateISO: string | null): string {
 
 function nightsLabel(nights: number | null): string {
   return nights != null ? `${nights} คืน` : '-';
+}
+
+function villaCode(room: string): string {
+  return room.split(' - ')[0] ?? room;
+}
+
+function villaStatusLine(status: VillaStatus): string {
+  switch (status.kind) {
+    case 'vacant':
+      return 'ว่าง / ไม่มีการเข้า-ออกวันนี้';
+    case 'arriving':
+      return `เช็คอิน: ${status.arrival.guest}`;
+    case 'departing':
+      return `เช็คเอาท์: ${status.departure.guest}`;
+    case 'turnover':
+      return `เช็คเอาท์: ${status.departure.guest} → เช็คอิน: ${status.arrival.guest}`;
+  }
+}
+
+function villaStatusCopyLine(r: VillaStatusRow): string {
+  return `${villaCode(r.room)}: ${villaStatusLine(r.status)}`;
 }
 
 function arrivalCopyLines(r: HousekeepingArrival): string {
@@ -134,6 +158,78 @@ function SubsectionLabel({ children }: { children: string }) {
   );
 }
 
+const VILLA_STATUS_BADGE: Record<VillaStatus['kind'], { label: string; bg: string; color: string }> = {
+  vacant:    { label: 'ว่าง',      bg: 'var(--card-2)',     color: 'var(--muted)' },
+  arriving:  { label: 'เช็คอิน',   bg: 'var(--primary)',    color: '#fff' },
+  departing: { label: 'เช็คเอาท์', bg: 'var(--accent-2)',   color: '#fff' },
+  turnover:  { label: 'เช็คเอาท์ + เช็คอิน', bg: 'var(--gold)', color: 'var(--on-accent)' },
+};
+
+function VillaRow({ r }: { r: VillaStatusRow }) {
+  const badge = VILLA_STATUS_BADGE[r.status.kind];
+  return (
+    <div className="cdy-hk-villa-row" style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+      padding: '12px 16px', borderRadius: 14, background: 'var(--card-2)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+        <span style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 20, color: 'var(--ink)' }}>
+          {villaCode(r.room)}
+        </span>
+        <span style={{ fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 13, color: 'var(--ink)' }}>
+          {villaStatusLine(r.status)}
+        </span>
+      </div>
+      <span style={{
+        fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 11.5, fontWeight: 700,
+        color: badge.color, background: badge.bg, padding: '5px 11px', borderRadius: 999,
+        whiteSpace: 'nowrap', flexShrink: 0,
+      }}>
+        {badge.label}
+      </span>
+    </div>
+  );
+}
+
+function VillaRosterSection({ label, rows }: { label: string; rows: VillaStatusRow[] }) {
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+
+  async function onCopy() {
+    try {
+      await navigator.clipboard.writeText(`${label}\n\n${rows.map(villaStatusCopyLine).join('\n')}`);
+      setCopyState('copied');
+    } catch (_e) {
+      setCopyState('failed');
+    }
+    setTimeout(() => setCopyState('idle'), 2000);
+  }
+
+  const copyLabel = copyState === 'copied' ? 'คัดลอกแล้ว!' : copyState === 'failed' ? 'คัดลอกไม่สำเร็จ' : 'คัดลอกข้อความ';
+
+  return (
+    <SectionCard>
+      <SectionHead
+        title={label}
+        right={
+          <button
+            onClick={onCopy}
+            style={{
+              background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10,
+              padding: '8px 16px', fontFamily: "'Manrope', sans-serif", fontSize: 12, fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            {copyLabel}
+          </button>
+        }
+      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {rows.map((r) => <VillaRow key={r.room} r={r} />)}
+      </div>
+    </SectionCard>
+  );
+}
+
 function DaySection({
   label, arrivals, departures,
 }: { label: string; arrivals: HousekeepingArrival[]; departures: HousekeepingDeparture[] }) {
@@ -207,6 +303,8 @@ export default function HousekeepingView({
   const tomorrowRows = arrivalsForDate(arrivals, tomorrow);
   const departuresToday = departuresForDate(arrivals, today);
   const departuresTomorrow = departuresForDate(arrivals, tomorrow);
+  const villaStatusesToday = villaStatusesForDate(arrivals, today);
+  const villaStatusesTomorrow = villaStatusesForDate(arrivals, tomorrow);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -224,6 +322,8 @@ export default function HousekeepingView({
           </button>
         </div>
       )}
+      <VillaRosterSection label="สถานะวิลล่า — วันนี้" rows={villaStatusesToday} />
+      <VillaRosterSection label="สถานะวิลล่า — พรุ่งนี้" rows={villaStatusesTomorrow} />
       <DaySection label="วันนี้" arrivals={todayRows} departures={departuresToday} />
       <DaySection label="พรุ่งนี้" arrivals={tomorrowRows} departures={departuresTomorrow} />
     </div>

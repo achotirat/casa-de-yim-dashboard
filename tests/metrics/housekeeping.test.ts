@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { arrivalsForDate, departuresForDate } from '../../src/metrics/housekeeping';
+import { arrivalsForDate, departuresForDate, villaRoomLabels, villaStatusesForDate } from '../../src/metrics/housekeeping';
 import type { ArrivalsReport } from '../../src/types';
 
 function report(rows: ArrivalsReport['rows']): ArrivalsReport {
@@ -129,5 +129,74 @@ describe('departuresForDate', () => {
       { resNo: '1', guest: 'A', room: 'A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-07', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
     ]);
     expect(departuresForDate(arrivals, '2026-06-03')).toEqual([]);
+  });
+});
+
+describe('villaRoomLabels', () => {
+  it('generates eZee-format room labels for the given count', () => {
+    expect(villaRoomLabels(4)).toEqual([
+      'A1 - Villa A1', 'A2 - Villa A2', 'A3 - Villa A3', 'A4 - Villa A4',
+    ]);
+  });
+
+  it('defaults to 4 villas', () => {
+    expect(villaRoomLabels()).toHaveLength(4);
+  });
+});
+
+describe('villaStatusesForDate', () => {
+  const villas = villaRoomLabels(4);
+
+  it('reports vacant for a villa with no arrival or departure that day', () => {
+    const result = villaStatusesForDate(report([]), '2026-06-03', villas);
+    expect(result).toEqual([
+      { room: 'A1 - Villa A1', status: { kind: 'vacant' } },
+      { room: 'A2 - Villa A2', status: { kind: 'vacant' } },
+      { room: 'A3 - Villa A3', status: { kind: 'vacant' } },
+      { room: 'A4 - Villa A4', status: { kind: 'vacant' } },
+    ]);
+  });
+
+  it('reports arriving for a villa with only a check-in that day', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'Somchai', room: 'A1 - Villa A1', rate: 1, arrival: '2026-06-03', departure: '2026-06-05', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    const result = villaStatusesForDate(arrivals, '2026-06-03', villas);
+    const a1 = result.find((r) => r.room === 'A1 - Villa A1')!;
+    expect(a1.status.kind).toBe('arriving');
+    if (a1.status.kind === 'arriving') expect(a1.status.arrival.guest).toBe('Somchai');
+  });
+
+  it('reports departing for a villa with only a check-out that day', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'Old Guest', room: 'A2 - Villa A2', rate: 1, arrival: '2026-06-01', departure: '2026-06-03', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    const result = villaStatusesForDate(arrivals, '2026-06-03', villas);
+    const a2 = result.find((r) => r.room === 'A2 - Villa A2')!;
+    expect(a2.status.kind).toBe('departing');
+    if (a2.status.kind === 'departing') expect(a2.status.departure.guest).toBe('Old Guest');
+  });
+
+  it('reports turnover for a villa with both a check-out and check-in that day', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'Outgoing', room: 'A3 - Villa A3', rate: 1, arrival: '2026-06-01', departure: '2026-06-03', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+      { resNo: '2', guest: 'Incoming', room: 'A3 - Villa A3', rate: 1, arrival: '2026-06-03', departure: '2026-06-05', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    const result = villaStatusesForDate(arrivals, '2026-06-03', villas);
+    const a3 = result.find((r) => r.room === 'A3 - Villa A3')!;
+    expect(a3.status.kind).toBe('turnover');
+    if (a3.status.kind === 'turnover') {
+      expect(a3.status.departure.guest).toBe('Outgoing');
+      expect(a3.status.arrival.guest).toBe('Incoming');
+    }
+  });
+
+  it('preserves villa roster order regardless of arrival row order', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'Z', room: 'A4 - Villa A4', rate: 1, arrival: '2026-06-03', departure: '2026-06-05', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+      { resNo: '2', guest: 'Y', room: 'A1 - Villa A1', rate: 1, arrival: '2026-06-03', departure: '2026-06-05', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    const result = villaStatusesForDate(arrivals, '2026-06-03', villas);
+    expect(result.map((r) => r.room)).toEqual(['A1 - Villa A1', 'A2 - Villa A2', 'A3 - Villa A3', 'A4 - Villa A4']);
   });
 });
