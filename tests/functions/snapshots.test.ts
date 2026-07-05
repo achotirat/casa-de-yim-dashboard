@@ -125,7 +125,7 @@ describe('lookback merge', () => {
     ] },
   };
 
-  function mockGetForKey(key: string, opts: unknown) {
+  function mockGetForKey(key: string) {
     if (key === 'snapshot/2026-07-05') return Promise.resolve(LATEST);
     if (key === 'snapshot/2026-06-28') return Promise.resolve(OLDER);
     return Promise.resolve(null);
@@ -164,7 +164,7 @@ describe('lookback merge', () => {
     };
     mockList.mockResolvedValue({ blobs: [{ key: 'snapshot/2026-06-28' }, { key: 'snapshot/2026-07-05' }] });
     mockGetJSON.mockImplementation((key: string) =>
-      key === 'snapshot/2026-06-28' ? Promise.resolve(olderWithSameResNo) : mockGetForKey(key, undefined)
+      key === 'snapshot/2026-06-28' ? Promise.resolve(olderWithSameResNo) : mockGetForKey(key)
     );
     const res = await handler(req('GET', 'https://x/api/snapshots?key=ignored', cookieFor('housekeeper')));
     const json = await res.json();
