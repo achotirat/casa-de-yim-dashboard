@@ -68,4 +68,10 @@ describe('hasPermission', () => {
   it('null role has no permissions', () => {
     expect(hasPermission(null, 'read:arrivals')).toBe(false);
   });
+  it('owner has write:villa-status', () => {
+    expect(hasPermission('owner', 'write:villa-status')).toBe(true);
+  });
+  it('housekeeper has write:villa-status', () => {
+    expect(hasPermission('housekeeper', 'write:villa-status')).toBe(true);
+  });
 });
