@@ -1,10 +1,30 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ArrivalsReport } from '../../types';
 import {
   arrivalsForDate, departuresForDate, villaStatusesForDate,
   type HousekeepingArrival, type HousekeepingDeparture, type VillaStatus, type VillaStatusRow,
 } from '../../metrics/housekeeping';
+import { getVillaStatuses, updateVillaStatus, type VillaStatusEntry } from '../../lib/api';
 import SectionCard, { SectionHead } from './SectionCard';
+
+function generatePasscode(): string {
+  const digits = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `00${digits}`;
+}
+
+function controllingResNo(status: VillaStatus): string | null {
+  switch (status.kind) {
+    case 'vacant': return null;
+    case 'arriving': return status.arrival.resNo;
+    case 'departing': return status.departure.resNo;
+    case 'turnover': return status.arrival.resNo; // the incoming guest, per spec
+    case 'stayover': return status.arrival.resNo;
+  }
+}
+
+function hasPasscodeControl(kind: VillaStatus['kind']): boolean {
+  return kind === 'arriving' || kind === 'turnover' || kind === 'stayover';
+}
 
 function isoDate(offsetDays: number): string {
   const d = new Date();
@@ -45,6 +65,8 @@ function villaStatusLine(status: VillaStatus): string {
       return `เช็คเอาท์: ${status.departure.guest}`;
     case 'turnover':
       return `เช็คเอาท์: ${status.departure.guest} → เช็คอิน: ${status.arrival.guest}`;
+    case 'stayover':
+      return `พักต่อ: ${status.arrival.guest}`;
   }
 }
 
@@ -163,13 +185,82 @@ const VILLA_STATUS_BADGE: Record<VillaStatus['kind'], { label: string; bg: strin
   arriving:  { label: 'เช็คอิน',   bg: 'var(--primary)',    color: '#fff' },
   departing: { label: 'เช็คเอาท์', bg: 'var(--accent-2)',   color: '#fff' },
   turnover:  { label: 'เช็คเอาท์ + เช็คอิน', bg: 'var(--gold)', color: 'var(--on-accent)' },
+  stayover:  { label: 'พักต่อ', bg: 'var(--card-2)', color: 'var(--ink)' },
 };
 
-function VillaRow({ r }: { r: VillaStatusRow }) {
+const PASSCODE_RE = /^\d{6}$/;
+
+function PasscodeControl({
+  resNo, value, onUpdate,
+}: { resNo: string; value: string | null; onUpdate: (resNo: string, patch: Partial<VillaStatusEntry>) => void }) {
+  const [draft, setDraft] = useState(value ?? '');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDraft(value ?? '');
+  }, [value]);
+
+  function commit(next: string) {
+    if (next === '') return;
+    if (!PASSCODE_RE.test(next)) {
+      setError('รหัสต้องเป็นตัวเลข 6 หลัก');
+      return;
+    }
+    setError(null);
+    onUpdate(resNo, { passcode: next });
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={(e) => commit(e.target.value)}
+          placeholder="รหัสประตู"
+          style={{
+            width: 90, fontFamily: "'Manrope', monospace", fontSize: 13, padding: '5px 8px',
+            borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)',
+          }}
+        />
+        <button
+          onClick={() => {
+            const code = generatePasscode();
+            setDraft(code);
+            setError(null);
+            onUpdate(resNo, { passcode: code });
+          }}
+          style={{
+            background: 'none', border: '1px solid var(--line)', borderRadius: 8,
+            padding: '5px 10px', fontFamily: "'Manrope', sans-serif", fontSize: 11.5, fontWeight: 700,
+            color: 'var(--muted)', cursor: 'pointer', whiteSpace: 'nowrap',
+          }}
+        >
+          สร้างรหัส
+        </button>
+      </div>
+      {error && (
+        <span style={{ fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 11, color: 'var(--accent-2)' }}>
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function VillaRow({
+  r, villaStatusData, onUpdate,
+}: {
+  r: VillaStatusRow;
+  villaStatusData: Record<string, VillaStatusEntry>;
+  onUpdate: (resNo: string, patch: Partial<VillaStatusEntry>) => void;
+}) {
   const badge = VILLA_STATUS_BADGE[r.status.kind];
+  const resNo = controllingResNo(r.status);
+  const entry = resNo ? villaStatusData[resNo] : undefined;
   return (
     <div className="cdy-hk-villa-row" style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
       padding: '12px 16px', borderRadius: 14, background: 'var(--card-2)',
     }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
@@ -180,18 +271,43 @@ function VillaRow({ r }: { r: VillaStatusRow }) {
           {villaStatusLine(r.status)}
         </span>
       </div>
-      <span style={{
-        fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 11.5, fontWeight: 700,
-        color: badge.color, background: badge.bg, padding: '5px 11px', borderRadius: 999,
-        whiteSpace: 'nowrap', flexShrink: 0,
-      }}>
-        {badge.label}
-      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        {resNo && (
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+            fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 12, color: 'var(--ink)',
+          }}>
+            <input
+              type="checkbox"
+              checked={entry?.ready ?? false}
+              onChange={() => onUpdate(resNo, { ready: !(entry?.ready ?? false) })}
+            />
+            พร้อมรับแขก
+          </label>
+        )}
+        {resNo && hasPasscodeControl(r.status.kind) && (
+          <PasscodeControl resNo={resNo} value={entry?.passcode ?? null} onUpdate={onUpdate} />
+        )}
+        <span style={{
+          fontFamily: "'Noto Sans Thai', 'Manrope', sans-serif", fontSize: 11.5, fontWeight: 700,
+          color: badge.color, background: badge.bg, padding: '5px 11px', borderRadius: 999,
+          whiteSpace: 'nowrap', flexShrink: 0,
+        }}>
+          {badge.label}
+        </span>
+      </div>
     </div>
   );
 }
 
-function VillaRosterSection({ label, rows }: { label: string; rows: VillaStatusRow[] }) {
+function VillaRosterSection({
+  label, rows, villaStatusData, onUpdate,
+}: {
+  label: string;
+  rows: VillaStatusRow[];
+  villaStatusData: Record<string, VillaStatusEntry>;
+  onUpdate: (resNo: string, patch: Partial<VillaStatusEntry>) => void;
+}) {
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   async function onCopy() {
@@ -224,7 +340,9 @@ function VillaRosterSection({ label, rows }: { label: string; rows: VillaStatusR
         }
       />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {rows.map((r) => <VillaRow key={r.room} r={r} />)}
+        {rows.map((r) => (
+          <VillaRow key={r.room} r={r} villaStatusData={villaStatusData} onUpdate={onUpdate} />
+        ))}
       </div>
     </SectionCard>
   );
@@ -306,6 +424,21 @@ export default function HousekeepingView({
   const villaStatusesToday = villaStatusesForDate(arrivals, today);
   const villaStatusesTomorrow = villaStatusesForDate(arrivals, tomorrow);
 
+  const [villaStatusData, setVillaStatusData] = useState<Record<string, VillaStatusEntry>>({});
+
+  useEffect(() => {
+    const resNos = [...villaStatusesToday, ...villaStatusesTomorrow]
+      .map((r) => controllingResNo(r.status))
+      .filter((r): r is string => r !== null);
+    const unique = Array.from(new Set(resNos));
+    if (unique.length > 0) getVillaStatuses(unique).then(setVillaStatusData);
+  }, [arrivals]);
+
+  async function onUpdate(resNo: string, patch: Partial<VillaStatusEntry>) {
+    setVillaStatusData((prev) => ({ ...prev, [resNo]: { ...(prev[resNo] ?? { ready: false, passcode: null }), ...patch } }));
+    await updateVillaStatus(resNo, patch);
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {onLogout && (
@@ -322,8 +455,8 @@ export default function HousekeepingView({
           </button>
         </div>
       )}
-      <VillaRosterSection label="สถานะวิลล่า — วันนี้" rows={villaStatusesToday} />
-      <VillaRosterSection label="สถานะวิลล่า — พรุ่งนี้" rows={villaStatusesTomorrow} />
+      <VillaRosterSection label="สถานะวิลล่า — วันนี้" rows={villaStatusesToday} villaStatusData={villaStatusData} onUpdate={onUpdate} />
+      <VillaRosterSection label="สถานะวิลล่า — พรุ่งนี้" rows={villaStatusesTomorrow} villaStatusData={villaStatusData} onUpdate={onUpdate} />
       <DaySection label="วันนี้" arrivals={todayRows} departures={departuresToday} />
       <DaySection label="พรุ่งนี้" arrivals={tomorrowRows} departures={departuresTomorrow} />
     </div>

@@ -6,11 +6,12 @@ export type Permission =
   | 'read:revenue'
   | 'read:arrivals'
   | 'write:snapshot'
-  | 'read:snapshot-keys';
+  | 'read:snapshot-keys'
+  | 'write:villa-status';
 
 const ROLE_PERMISSIONS: Record<Role, Set<Permission>> = {
-  owner: new Set(['read:revenue', 'read:arrivals', 'write:snapshot', 'read:snapshot-keys']),
-  housekeeper: new Set(['read:arrivals']),
+  owner: new Set(['read:revenue', 'read:arrivals', 'write:snapshot', 'read:snapshot-keys', 'write:villa-status']),
+  housekeeper: new Set(['read:arrivals', 'write:villa-status']),
 };
 
 const ROLES: Role[] = ['owner', 'housekeeper'];

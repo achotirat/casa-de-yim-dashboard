@@ -1,6 +1,7 @@
 import type { ArrivalsReport } from '../types';
 
 export interface HousekeepingArrival {
+  resNo: string;
   room: string;
   guest: string;
   adults: number | null;
@@ -26,6 +27,7 @@ export function arrivalsForDate(
   return rows
     .filter((r) => r.arrival === dateISO && r.resType === 'Confirm Booking')
     .map((r) => ({
+      resNo: r.resNo,
       room: r.room,
       guest: r.guest,
       adults: r.pax,
@@ -39,6 +41,7 @@ export function arrivalsForDate(
 }
 
 export interface HousekeepingDeparture {
+  resNo: string;
   room: string;
   guest: string;
   departureDate: string; // ISO
@@ -57,6 +60,7 @@ export function departuresForDate(
   return confirmed
     .filter((r) => r.departure === dateISO)
     .map((r) => ({
+      resNo: r.resNo,
       room: r.room,
       guest: r.guest,
       departureDate: r.departure as string,
@@ -72,11 +76,37 @@ export function villaRoomLabels(count = 4): string[] {
   return Array.from({ length: count }, (_, i) => `A${i + 1} - Villa A${i + 1}`);
 }
 
+export function stayoverArrivalsForDate(
+  arrivals: ArrivalsReport | undefined,
+  dateISO: string
+): HousekeepingArrival[] {
+  const rows = arrivals?.rows ?? [];
+  return rows
+    .filter((r) =>
+      r.resType === 'Confirm Booking' &&
+      r.arrival !== null && r.arrival < dateISO &&
+      r.departure !== null && r.departure > dateISO
+    )
+    .map((r) => ({
+      resNo: r.resNo,
+      room: r.room,
+      guest: r.guest,
+      adults: r.pax,
+      children: r.children,
+      arrivalDate: r.arrival as string,
+      departureDate: r.departure,
+      nights: nightsBetween(r.arrival as string, r.departure),
+      notes: r.notes,
+    }))
+    .sort((a, b) => a.room.localeCompare(b.room));
+}
+
 export type VillaStatus =
   | { kind: 'vacant' }
   | { kind: 'arriving'; arrival: HousekeepingArrival }
   | { kind: 'departing'; departure: HousekeepingDeparture }
-  | { kind: 'turnover'; departure: HousekeepingDeparture; arrival: HousekeepingArrival };
+  | { kind: 'turnover'; departure: HousekeepingDeparture; arrival: HousekeepingArrival }
+  | { kind: 'stayover'; arrival: HousekeepingArrival };
 
 export interface VillaStatusRow {
   room: string;
@@ -85,11 +115,10 @@ export interface VillaStatusRow {
 
 // Note: eZee's Arrival List export only contains rows whose *arrival* date
 // falls within the exported window (today -> +2 months) — a guest who
-// checked in before that window and is just staying through today never
-// appears in this data. A villa with no matching arrival/departure row is
-// reported "vacant" here, but may in fact have a staying guest; the UI
-// must not claim the villa is empty, only that no check-in/out action is
-// needed today. True "stayover" detection needs a different eZee report.
+// checked in before that window is missing from a single day's export.
+// The `arrivals` passed in here is expected to already be merged across a
+// lookback of prior days' snapshots (see netlify/functions/snapshots.ts)
+// so that stayover/departing rows outside the export window are present.
 export function villaStatusesForDate(
   arrivals: ArrivalsReport | undefined,
   dateISO: string,
@@ -97,6 +126,7 @@ export function villaStatusesForDate(
 ): VillaStatusRow[] {
   const arrivalByRoom = new Map(arrivalsForDate(arrivals, dateISO).map((a) => [a.room, a]));
   const departureByRoom = new Map(departuresForDate(arrivals, dateISO).map((d) => [d.room, d]));
+  const stayoverByRoom = new Map(stayoverArrivalsForDate(arrivals, dateISO).map((a) => [a.room, a]));
 
   return villaRooms.map((room) => {
     const arrival = arrivalByRoom.get(room);
@@ -104,6 +134,8 @@ export function villaStatusesForDate(
     if (departure && arrival) return { room, status: { kind: 'turnover', departure, arrival } };
     if (departure) return { room, status: { kind: 'departing', departure } };
     if (arrival) return { room, status: { kind: 'arriving', arrival } };
+    const stayover = stayoverByRoom.get(room);
+    if (stayover) return { room, status: { kind: 'stayover', arrival: stayover } };
     return { room, status: { kind: 'vacant' } };
   });
 }

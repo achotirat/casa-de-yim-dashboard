@@ -47,6 +47,28 @@ export async function saveSnapshot(key: string, snapshot: Snapshot): Promise<voi
   if (!res.ok) throw new Error('save failed');
 }
 
+export interface VillaStatusEntry {
+  ready: boolean;
+  passcode: string | null;
+}
+
+export async function getVillaStatuses(resNos: string[]): Promise<Record<string, VillaStatusEntry>> {
+  if (resNos.length === 0) return {};
+  const res = await fetch(`/api/villa-status?resNos=${resNos.map(encodeURIComponent).join(',')}`);
+  if (!res.ok) return {};
+  const json = await res.json();
+  return json.data as Record<string, VillaStatusEntry>;
+}
+
+export async function updateVillaStatus(resNo: string, patch: Partial<VillaStatusEntry>): Promise<void> {
+  const res = await fetch('/api/villa-status', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ resNo, ...patch }),
+  });
+  if (!res.ok) throw new Error('villa-status update failed');
+}
+
 export async function aiInsight(context: string): Promise<string> {
   const res = await fetch('/api/ai-insight', {
     method: 'POST',

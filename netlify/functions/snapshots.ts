@@ -7,6 +7,7 @@ function store() {
 }
 
 interface StrippedArrivalRow {
+  resNo: string;
   room: string;
   guest: string;
   pax: number | null;
@@ -28,6 +29,7 @@ function stripForHousekeeper(snapshot: any): StrippedSnapshot {
     dataAsOf: snapshot?.dataAsOf ?? null,
     arrivals: {
       rows: rows.map((r) => ({
+        resNo: r.resNo,
         room: r.room,
         guest: r.guest,
         pax: r.pax,
@@ -39,6 +41,31 @@ function stripForHousekeeper(snapshot: any): StrippedSnapshot {
       })),
     },
   };
+}
+
+function addDaysISO(dateISO: string, delta: number): string {
+  const d = new Date(dateISO + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+
+async function mergeArrivalsLookback(
+  s: ReturnType<typeof store>,
+  latestKey: string,
+  latestData: any
+): Promise<any[]> {
+  const dataAsOf: string = latestData?.dataAsOf ?? new Date().toISOString().slice(0, 10);
+  const byResNo = new Map<string, any>();
+  // oldest-first so a newer snapshot's row for the same resNo overwrites it
+  for (let i = 14; i >= 0; i--) {
+    const dayKey = `snapshot/${addDaysISO(dataAsOf, -i)}`;
+    const snap = dayKey === latestKey ? latestData : await s.get(dayKey, { type: 'json' });
+    if (!snap) continue;
+    for (const row of snap.arrivals?.rows ?? []) {
+      byResNo.set(row.resNo, row);
+    }
+  }
+  return Array.from(byResNo.values());
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -64,13 +91,22 @@ export default async function handler(req: Request): Promise<Response> {
         const latestKey = keys[keys.length - 1];
         if (!latestKey) return Response.json({ ok: true, data: { dataAsOf: null, arrivals: { rows: [] } } });
         const data = await s.get(latestKey, { type: 'json' });
-        return Response.json({ ok: true, data: stripForHousekeeper(data) });
+        const mergedRows = await mergeArrivalsLookback(s, latestKey, data);
+        const merged = { ...data, arrivals: { ...data.arrivals, rows: mergedRows } };
+        return Response.json({ ok: true, data: stripForHousekeeper(merged) });
       }
 
       if (!hasPermission(role, 'read:arrivals')) {
         return new Response(JSON.stringify({ ok: false, reason: 'forbidden' }), { status: 403, headers: { 'content-type': 'application/json' } });
       }
       const data = await s.get(key, { type: 'json' });
+      const list = await s.list();
+      const keys = list.blobs.map((b) => b.key).sort();
+      const latestKey = keys[keys.length - 1];
+      if (data && key === latestKey) {
+        const mergedRows = await mergeArrivalsLookback(s, latestKey, data);
+        return Response.json({ ok: true, data: { ...data, arrivals: { ...data.arrivals, rows: mergedRows } } });
+      }
       return Response.json({ ok: true, data });
     }
 

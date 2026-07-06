@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { arrivalsForDate, departuresForDate, villaRoomLabels, villaStatusesForDate } from '../../src/metrics/housekeeping';
+import { arrivalsForDate, departuresForDate, stayoverArrivalsForDate, villaRoomLabels, villaStatusesForDate } from '../../src/metrics/housekeeping';
 import type { ArrivalsReport } from '../../src/types';
 
 function report(rows: ArrivalsReport['rows']): ArrivalsReport {
@@ -14,7 +14,7 @@ describe('arrivalsForDate', () => {
     ]);
     const result = arrivalsForDate(arrivals, '2026-06-01');
     expect(result).toEqual([
-      { room: 'A1', guest: 'A', adults: 2, children: 0, arrivalDate: '2026-06-01', departureDate: '2026-06-03', nights: 2, notes: 'note-a' },
+      { resNo: '1', room: 'A1', guest: 'A', adults: 2, children: 0, arrivalDate: '2026-06-01', departureDate: '2026-06-03', nights: 2, notes: 'note-a' },
     ]);
   });
 
@@ -77,7 +77,7 @@ describe('departuresForDate', () => {
     ]);
     const result = departuresForDate(arrivals, '2026-06-03');
     expect(result).toEqual([
-      { room: 'A1', guest: 'A', departureDate: '2026-06-03', sameDayTurnover: false },
+      { resNo: '1', room: 'A1', guest: 'A', departureDate: '2026-06-03', sameDayTurnover: false },
     ]);
   });
 
@@ -98,7 +98,7 @@ describe('departuresForDate', () => {
     ]);
     const result = departuresForDate(arrivals, '2026-06-03');
     expect(result).toEqual([
-      { room: 'A1', guest: 'Outgoing', departureDate: '2026-06-03', sameDayTurnover: true },
+      { resNo: '1', room: 'A1', guest: 'Outgoing', departureDate: '2026-06-03', sameDayTurnover: true },
     ]);
   });
 
@@ -129,6 +129,43 @@ describe('departuresForDate', () => {
       { resNo: '1', guest: 'A', room: 'A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-07', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
     ]);
     expect(departuresForDate(arrivals, '2026-06-03')).toEqual([]);
+  });
+});
+
+describe('stayoverArrivalsForDate', () => {
+  it('returns rows that span the given date (checked in before, checking out after)', () => {
+    const arrivals = report([
+      { resNo: '9', guest: 'Staying', room: 'A2', rate: 1, arrival: '2026-06-01', departure: '2026-06-10', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: 'n' },
+    ]);
+    const result = stayoverArrivalsForDate(arrivals, '2026-06-05');
+    expect(result).toEqual([
+      { resNo: '9', room: 'A2', guest: 'Staying', adults: 2, children: 0, arrivalDate: '2026-06-01', departureDate: '2026-06-10', nights: 9, notes: 'n' },
+    ]);
+  });
+
+  it('excludes a row whose arrival is exactly the given date (that is "arriving", not stayover)', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'A', room: 'A1', rate: 1, arrival: '2026-06-05', departure: '2026-06-10', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    expect(stayoverArrivalsForDate(arrivals, '2026-06-05')).toEqual([]);
+  });
+
+  it('excludes a row whose departure is exactly the given date (that is "departing", not stayover)', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'A', room: 'A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-05', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    expect(stayoverArrivalsForDate(arrivals, '2026-06-05')).toEqual([]);
+  });
+
+  it('excludes rows that are not Confirm Booking', () => {
+    const arrivals = report([
+      { resNo: '1', guest: 'A', room: 'A1', rate: 1, arrival: '2026-06-01', departure: '2026-06-10', pax: 2, children: 0, resType: 'Tentative', channel: 'OTA', notes: '' },
+    ]);
+    expect(stayoverArrivalsForDate(arrivals, '2026-06-05')).toEqual([]);
+  });
+
+  it('returns an empty array when arrivals is undefined', () => {
+    expect(stayoverArrivalsForDate(undefined, '2026-06-05')).toEqual([]);
   });
 });
 
@@ -189,6 +226,16 @@ describe('villaStatusesForDate', () => {
       expect(a3.status.departure.guest).toBe('Outgoing');
       expect(a3.status.arrival.guest).toBe('Incoming');
     }
+  });
+
+  it('reports stayover for a villa with a guest checked in before and checking out after the given date', () => {
+    const arrivals = report([
+      { resNo: '5', guest: 'Long Stay', room: 'A4 - Villa A4', rate: 1, arrival: '2026-06-01', departure: '2026-06-10', pax: 2, children: 0, resType: 'Confirm Booking', channel: 'OTA', notes: '' },
+    ]);
+    const result = villaStatusesForDate(arrivals, '2026-06-05', villas);
+    const a4 = result.find((r) => r.room === 'A4 - Villa A4')!;
+    expect(a4.status.kind).toBe('stayover');
+    if (a4.status.kind === 'stayover') expect(a4.status.arrival.guest).toBe('Long Stay');
   });
 
   it('preserves villa roster order regardless of arrival row order', () => {
